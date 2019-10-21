@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<launch>
+
+    <!-- Console launch prefix -->
+    <arg name="launch_prefix" default=""/>
+
+    <!-- ROS configuration -->
+    <arg name="ros_param_file" default="$(find mbzirc_detector)/config/ros.yaml"/>
+
+    <!-- Load parameters -->
+    <rosparam command="load" ns="mbzirc_detector" file="$(arg ros_param_file)"/>
+
+    <!-- Start high-level detector -->
+    <node pkg="mbzirc_detector" type="mbzirc_detector" name="mbzirc_detector" output="screen" launch-prefix="$(arg launch_prefix)">
+    </node>
+
+</launch>

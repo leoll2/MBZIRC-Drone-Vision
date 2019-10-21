@@ -1,0 +1,8 @@
+# Goal
+sensor_msgs/Image img
+---
+# Result
+darknet_ros_msgs/BoundingBoxes bboxes
+---
+# Feedback
+int32 elapsed_time

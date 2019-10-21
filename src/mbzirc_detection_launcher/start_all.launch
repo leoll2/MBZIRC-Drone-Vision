@@ -1,0 +1,15 @@
+<launch>
+    <!-- Camera inputs -->
+    <include file="$(find mbzirc_detection_launcher)/start_cameras.launch" />
+
+    <!-- Camera multiplexer -->
+    <node pkg="topic_tools" type="mux" name="mux_cam" args="mux_cam/image_raw mobius_cam/image_raw ausdom_cam/image_raw mux:=mux_cam">
+    </node>
+
+    <!-- High-level detector -->
+    <include file="$(find mbzirc_detector)/launch/detector.launch" />
+
+    <!-- Display (for monitor/debugging) -->
+    <include file="$(find mbzirc_detection_launcher)/start_display.launch" />
+
+</launch>

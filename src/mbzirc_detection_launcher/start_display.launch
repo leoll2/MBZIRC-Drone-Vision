@@ -1,0 +1,31 @@
+<launch>
+
+    <!-- Display Ausdom camera -->
+    <!--
+    <group>
+        <remap from="/camera/image_to_display" to="/ausdom_cam/image_raw" />
+        <include file="$(find imageshow)/launch/imageshow.launch">
+            <arg name="shower_name" value="ausdom" />
+        </include>
+    </group>
+    -->
+    
+    <!-- Display Mobius camera -->
+    <!--
+	<group>
+        <remap from="/camera/image_to_display" to="/mobius_cam/image_raw" />
+        <include file="$(find imageshow)/launch/imageshow.launch">
+            <arg name="shower_name" value="mobius" />
+        </include>
+    </group>
+    -->
+
+    <!-- Display camera MUX output -->
+    <group>
+        <remap from="/camera/image_to_display" to="/mux_cam/image_raw" />
+        <include file="$(find imageshow)/launch/imageshow.launch">
+            <arg name="shower_name" value="selected_camera" />
+        </include>
+    </group>
+
+</launch>

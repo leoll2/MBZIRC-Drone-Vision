@@ -1,0 +1,12 @@
+yolo_model:
+
+  config_file:
+    name: yolov3-tiny_3l-mbzirc.cfg
+  weight_file:
+    name: yolov3-tiny_3l-mbzirc_4000.weights
+  threshold:
+    value: 0.4
+  detection_classes:
+    names:
+      - drone
+      - ball

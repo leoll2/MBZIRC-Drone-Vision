@@ -1,0 +1,5 @@
+<launch>
+    <arg name="shower_name" default="cam" />
+
+    <node pkg="imageshow" type="imageshow_node"	name="$(arg shower_name)_show"/>
+</launch>
