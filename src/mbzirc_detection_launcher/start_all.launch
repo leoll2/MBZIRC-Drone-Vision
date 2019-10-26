@@ -1,3 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
 <launch>
     <!-- Camera inputs -->
     <include file="$(find mbzirc_detection_launcher)/start_cameras.launch" />
@@ -5,6 +7,9 @@
     <!-- Camera multiplexer -->
     <node pkg="topic_tools" type="mux" name="mux_cam" args="mux_cam/image_raw mobius_cam/image_raw ausdom_cam/image_raw mux:=mux_cam">
     </node>
+
+    <!-- Darknet Yolo detector -->
+    <include file="$(find darknet_ros)/launch/darknet.launch" />
 
     <!-- High-level detector -->
     <include file="$(find mbzirc_detector)/launch/detector.launch" />

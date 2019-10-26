@@ -30,8 +30,9 @@ namespace darknet_ros {
         //                   darknet_ros::DetectObjects::Response &res);
         void initDarknet();
         void readParameters();
+        darknet_ros_msgs::BoundingBoxes yoloDetect(cv_bridge::CvImagePtr cv_cam_img);
         void initDetectionActionServer();
-        void detectObjectsActionGoalCallback();
+        void detectObjectsActionGoalCallback(const darknet_ros_msgs::DetectObjectsGoalConstPtr &img_act_ptr);
         void detectObjectsActionPreemptCallback();
         //void initDetectionService(); TODO remove
     public:

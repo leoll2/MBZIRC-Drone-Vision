@@ -12,10 +12,31 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   sensor_msgs
   std_msgs
+  darknet_ros
 )
 
 ## Find OpenCV macros and libraries
 find_package(OpenCV REQUIRED)
+
+## Find CUDA
+FIND_PACKAGE(CUDA)
+if (CUDA_FOUND)
+  find_package(CUDA REQUIRED)
+  set(
+    CUDA_NVCC_FLAGS
+    ${CUDA_NVCC_FLAGS};
+    -O3
+    -gencode arch=compute_30,code=sm_30
+    -gencode arch=compute_35,code=sm_35
+    -gencode arch=compute_50,code=[sm_50,compute_50]
+    -gencode arch=compute_52,code=[sm_52,compute_52]
+    -gencode arch=compute_61,code=sm_61
+    -gencode arch=compute_62,code=sm_62
+  )
+  add_definitions(-DGPU)
+#else()
+#  list(APPEND LIBRARIES "m")
+endif()
 
 
 ################################################
@@ -109,46 +130,83 @@ catkin_package(
     rospy
     sensor_msgs
     std_msgs
+    darknet_ros
   # DEPENDS system_lib
 )
+
 
 ###########
 ## Build ##
 ###########
 
 ## Specify additional locations of header files
-## Your package locations should be listed before other locations
 include_directories(
-  include
-  ${catkin_INCLUDE_DIRS}
-  ${OpenCV_INCLUDE_DIRS}
+    include
+    ${catkin_INCLUDE_DIRS}
+    ${OpenCV_INCLUDE_DIRS}
 )
 
-## Declare a C++ library
-add_library(${PROJECT_NAME}_lib
-  src/MbzircDetector.cpp
-)
+if (CUDA_FOUND)
 
-## Add cmake target dependencies of the library
-# add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+    ## Link CUDA directory
+    link_directories(/usr/local/cuda/lib64)
 
-## Declare a C++ executable
-add_executable(${PROJECT_NAME}_node src/mbzirc_detector_ros_node.cpp)
+    ## Declare a C++ libraries
+    cuda_add_library(${PROJECT_NAME}_lib
+      src/MbzircDetector.cpp
+    )
+    
+    ## Add cmake target dependencies of the library
+    # add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+    
+    ## Declare a C++ executable
+    cuda_add_executable(${PROJECT_NAME}_node src/mbzirc_detector_ros_node.cpp)
+    
+    ## Rename C++ executable without prefix
+    set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME mbzirc_detector PREFIX "")
+    
+    ## Add cmake target dependencies of the executable
+    # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+    
+    ## Specify libraries to link a library or executable target against
+    target_link_libraries(${PROJECT_NAME}_lib
+        cuda
+        cudart
+        cublas
+        curand
+        ${catkin_LIBRARIES}
+        ${OpenCV_LIBS}
+    )
+else()
 
-## Rename C++ executable without prefix
-set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME mbzirc_detector PREFIX "")
+    ## Declare a C++ libraries
+    add_library(${PROJECT_NAME}_lib
+      src/MbzircDetector.cpp
+    )
+    
+    ## Add cmake target dependencies of the library
+    # add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+    
+    ## Declare a C++ executable
+    add_executable(${PROJECT_NAME}_node src/mbzirc_detector_ros_node.cpp)
+    
+    ## Rename C++ executable without prefix
+    set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME mbzirc_detector PREFIX "")
+    
+    ## Add cmake target dependencies of the executable
+    # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+    
+    ## Specify libraries to link a library or executable target against
+    target_link_libraries(${PROJECT_NAME}_lib
+        ${catkin_LIBRARIES}
+        ${OpenCV_LIBS}
+    )
+endif()
 
-## Add cmake target dependencies of the executable
-# add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-## Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME}_lib
-    ${catkin_LIBRARIES}
-    ${OpenCV_LIBS}
-)
-target_link_libraries(${PROJECT_NAME}_node
+target_link_libraries(${PROJECT_NAME}_node      
     ${PROJECT_NAME}_lib
 )
+
 
 #############
 ## Install ##

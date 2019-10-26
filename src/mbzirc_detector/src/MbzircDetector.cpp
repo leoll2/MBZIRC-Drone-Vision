@@ -35,15 +35,26 @@ void MbzircDetector::switchCamera(std::string new_cam_topic)
 MbzircDetector::MbzircDetector(ros::NodeHandle nh)
   : nh_(nh),
     it_(nh_),
-    mux_nh_("mux_cam")
+    mux_nh_("mux_cam"),
+    yolo_act_cl_(nh_, "/darknet_ros/detect_objects", true)
 {
+    // Read the configuration
     readParameters();
+    ROS_INFO("Successfully read parameters");
+
+    // Init service client for camera switching
     cam_sel_client = mux_nh_.serviceClient<topic_tools::MuxSelect>("select");
-    
+    ROS_INFO("Successfully initialized service client for input selection");
+
+    // Init action client for yolo detection
+    yolo_act_cl_.waitForServer();
+    ROS_INFO("Successfully initialized action client for Yolo");
+
+    // Subscribe to camera input
     image_sub_ = it_.subscribe(input_camera_topic, 1, 
         &MbzircDetector::cameraCallback, this
     );
-
+    ROS_INFO("Successfully subscribed to input camera topic");
 }
 
 
@@ -54,7 +65,27 @@ MbzircDetector::~MbzircDetector() {}
 /* Callback for new camera input */
 void MbzircDetector::cameraCallback(const sensor_msgs::ImageConstPtr& msg)
 {
-    ROS_DEBUG("Detector received a new input frame");
+    ros::Time begin_time, end_time;
+
+    ROS_INFO("Detector received a new input frame");
     // switchCamera(short_camera_topic);
+
+    // Request a DetectObjects action
+    darknet_ros_msgs::DetectObjectsGoal det_goal;
+    det_goal.img = *msg;
+    begin_time = ros::Time::now();
+    ROS_INFO("Sending DetectObjects goal at time: %d,%d", begin_time.sec, begin_time.nsec);
+    yolo_act_cl_.sendGoal(det_goal);
+
+    bool dl_no_miss = yolo_act_cl_.waitForResult(ros::Duration(0.5));
+    if (dl_no_miss) {
+        actionlib::SimpleClientGoalState state = yolo_act_cl_.getState();
+        ROS_INFO("Yolo detection finished: %s", state.toString().c_str());
+    } else {
+        yolo_act_cl_.cancelGoal();
+        ROS_WARN("Deadline miss for Yolo detection");
+    }
+    end_time = ros::Time::now();
+    ROS_INFO("Finished DetectObjects goal at time: %d,%d", end_time.sec, end_time.nsec);
 }
 

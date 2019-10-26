@@ -5,12 +5,17 @@
 #include <sensor_msgs/image_encodings.h>
 #include <opencv2/imgproc.hpp>
 
+#include <actionlib/client/simple_action_client.h>
+
+#include <darknet_ros_msgs/DetectObjectsAction.h>
+
 class MbzircDetector {
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;
     image_transport::Subscriber image_sub_;
     ros::NodeHandle mux_nh_;
     ros::ServiceClient cam_sel_client;
+    actionlib::SimpleActionClient<darknet_ros_msgs::DetectObjectsAction> yolo_act_cl_;
 
     std::string input_camera_topic;
     std::string long_camera_name;
