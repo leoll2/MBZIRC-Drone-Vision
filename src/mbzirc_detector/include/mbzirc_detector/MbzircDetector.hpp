@@ -9,6 +9,15 @@
 
 #include <darknet_ros_msgs/DetectObjectsAction.h>
 
+typedef struct BBox {
+    int x;
+    int y;
+    int w;
+    int h;
+    float prob;
+    std::string obj_class;
+} BBox;
+
 class MbzircDetector {
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;
@@ -27,7 +36,7 @@ class MbzircDetector {
 
     void readParameters();
     void switchCamera(std::string camera_topic);
-
+    std::vector<BBox> callYoloDetector(const sensor_msgs::ImageConstPtr& msg);
 public:
     MbzircDetector(ros::NodeHandle nh);
     ~MbzircDetector();

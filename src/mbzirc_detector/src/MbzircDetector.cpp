@@ -62,30 +62,66 @@ MbzircDetector::MbzircDetector(ros::NodeHandle nh)
 MbzircDetector::~MbzircDetector() {}
 
 
-/* Callback for new camera input */
-void MbzircDetector::cameraCallback(const sensor_msgs::ImageConstPtr& msg)
+/* Invoke detection with Yolo algorithm */
+std::vector<BBox> MbzircDetector::callYoloDetector(const sensor_msgs::ImageConstPtr& msg)
 {
     ros::Time begin_time, end_time;
-
-    ROS_INFO("Detector received a new input frame");
-    // switchCamera(short_camera_topic);
-
-    // Request a DetectObjects action
+    float deadline = 0.5;
     darknet_ros_msgs::DetectObjectsGoal det_goal;
+    darknet_ros_msgs::DetectObjectsResultConstPtr det_res_ptr; 
+    std::vector<BBox> res_bboxes;
+
     det_goal.img = *msg;
     begin_time = ros::Time::now();
-    ROS_INFO("Sending DetectObjects goal at time: %d,%d", begin_time.sec, begin_time.nsec);
+    ROS_DEBUG("Sending DetectObjects goal at time: %d,%d", begin_time.sec, begin_time.nsec);
     yolo_act_cl_.sendGoal(det_goal);
 
-    bool dl_no_miss = yolo_act_cl_.waitForResult(ros::Duration(0.5));
-    if (dl_no_miss) {
+    bool dl_no_miss = yolo_act_cl_.waitForResult(ros::Duration(deadline));
+    if (dl_no_miss) {   // deadline respected
         actionlib::SimpleClientGoalState state = yolo_act_cl_.getState();
-        ROS_INFO("Yolo detection finished: %s", state.toString().c_str());
-    } else {
+        ROS_DEBUG("Yolo DetectObjects final state: %s", state.toString().c_str());
+        det_res_ptr = yolo_act_cl_.getResult();
+        for (const auto &b : det_res_ptr->bboxes.bounding_boxes) {
+        //for (int i = 0; i < det_res_ptr->bboxes.bounding_boxes.size(); ++i)
+        //    darknet_ros_msgs::BoundingBox b = det_res_ptr->bboxes.bounding_boxes[i];
+            BBox bbox;
+            bbox.x = b.x;
+            bbox.y = b.y;
+            bbox.w = b.w;
+            bbox.h = b.h;
+            bbox.prob = b.prob;
+            bbox.obj_class = b.Class;
+            res_bboxes.push_back(bbox);
+        }
+    } else {        // deadline missed
         yolo_act_cl_.cancelGoal();
         ROS_WARN("Deadline miss for Yolo detection");
     }
     end_time = ros::Time::now();
-    ROS_INFO("Finished DetectObjects goal at time: %d,%d", end_time.sec, end_time.nsec);
+    ROS_DEBUG("Completed DetectObjects goal at time: %d,%d", end_time.sec, end_time.nsec);
+
+    return res_bboxes;
+}
+
+
+/* Callback for new camera input */
+void MbzircDetector::cameraCallback(const sensor_msgs::ImageConstPtr& msg)
+{
+    std::vector<BBox> bboxes;
+
+    ROS_INFO("Detector received a new input frame");
+    // Change camera
+    // switchCamera(short_camera_topic);
+    
+    // Yolo detector
+    bboxes = callYoloDetector(msg);
+
+    // List bboxes (debug)
+    ROS_INFO("Detected %d objects:", (int)bboxes.size());
+    for (const auto &b : bboxes) {
+        ROS_INFO("\t %s at [(%d,%d),(%d,%d)] with prob %f",
+            b.obj_class.c_str(), b.x, b.y, b.x+b.w, b.y+b.h, b.prob    
+        );
+    }
 }
 

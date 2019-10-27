@@ -1,64 +1,89 @@
+#include <algorithm>
 #include "darknet_ros/YoloROSDetector.hpp"
 
 namespace darknet_ros {
 
-
-/* Service DetectObjects: receive an Image from the request,
- * run the Yolov3 object detection algorithm and return
- * as response an array of bounding boxes.
- */
-/*bool detectObjects(darknet_ros::DetectObjects::Request &req, TODO remove
-                   darknet_ros::DetectObjects::Response &res)
-{
-    // TODO: get image from request ('img' field)
-    ROS_INFO("Executing Yolo!");
-    // TODO: run algorithm
-    // TODO: produce response ('bboxes field')
-    return true;
-}
-*/
-
 /* Initialize the darknet (YOLO) */
 void YoloROSDetector::initDarknet()
 {
-    // TODO
+    ROS_INFO("Initializing Yolo detector. cfg=%s weights=%s",
+        yolo_cfg_path.c_str(), yolo_weights_path.c_str());
+    detector = new Detector(yolo_cfg_path, yolo_weights_path);
+    detector->nms = yolo_nms_thresh;    // non maximum suppression
 }
 
 
 /* Read the configuration from file */
 void YoloROSDetector::readParameters()
 {
-    // TODO
+    ROS_INFO("Reading Yolo parameters");
+    
+    // parameters in config/<model>.yaml
+    nh_.getParam("yolo_model/detection_classes/names", yolo_class_labels);
+    nh_.getParam("yolo_model/threshold/value", yolo_thresh);
+    nh_.getParam("yolo_model/weight_file/name", yolo_weights_model);
+    nh_.getParam("weights_path", yolo_weights_path);
+    nh_.getParam("yolo_model/config_file/name", yolo_cfg_model);
+    nh_.getParam("config_path", yolo_cfg_path);
+    nh_.getParam("yolo_model/nms_threshold/value", yolo_nms_thresh);
+    
+    yolo_weights_path += "/" + yolo_weights_model;
+    yolo_cfg_path += "/" + yolo_cfg_model;
+    yolo_data_path = darknet_path + "/data";
 }
 
 
-/* Configure and advertise the DetectObjects service */
-/*void initDetectionService() TODO remove
+/* Resize image with padding (letterbox) */
+cv::Mat resize_pad_img(const cv::Mat &src, unsigned pad_size)
 {
-    det_srv_ = nh_.advertiseService("detect_objects", detectObjects);
-    ROS_INFO("detect_objects service ready");
-}*/
+    cv::Mat dst;
+    cv::Scalar pad_color(0, 0, 0);
+    copyMakeBorder(src, dst, pad_size, pad_size, 0, 0, cv::BORDER_CONSTANT, pad_color);
+    return dst;
+}
+
 
 /* Run Yolo algorithm on the given image */
 darknet_ros_msgs::BoundingBoxes YoloROSDetector::yoloDetect(cv_bridge::CvImagePtr cv_cam_img)
 {
     int img_width, img_height;
-    darknet_ros_msgs::BoundingBoxes bboxes_res;
+    int pad_size;
+    cv::Mat square_cam_img;
+    std::shared_ptr<image_t> imaget_cam_img;
+    std::vector<bbox_t> bboxes_vec_res;
+    darknet_ros_msgs::BoundingBoxes bboxes_ros_res;
     ros::Time begin_time, end_time;
 
-    img_width = cv_cam_img->image.size().width;
-    img_height = cv_cam_img->image.size().height;
+    // Resize image to make it square
+    pad_size = (cv_cam_img->image.cols - cv_cam_img->image.rows)/2;
+    square_cam_img = resize_pad_img(cv_cam_img->image, pad_size);
+    img_width = square_cam_img.size().width;
+    img_height = square_cam_img.size().height;
 
-    ROS_INFO("Running fake Yolo on %dx%d image...", img_width, img_height); // DEBUG
+    // Convert from cv::Mat to darknet image_t
+    imaget_cam_img = detector->mat_to_image_resize(square_cam_img);
+
+    // Run Yolo
     begin_time = ros::Time::now();
-    ROS_INFO("Yolo started at time: %d,%d", begin_time.sec, begin_time.nsec);
-    ros::Duration(0.05).sleep();    // DEBUG simulate yolo detection delay
-    // TODO run yolo
+    ROS_DEBUG("Yolo started at time: %d,%09d", begin_time.sec, begin_time.nsec);
+    bboxes_vec_res = detector->detect_resized(*imaget_cam_img, 
+        img_width, img_height, yolo_thresh, false);
     end_time = ros::Time::now();
-    ROS_INFO("Yolo finished at time: %d,%d", end_time.sec, end_time.nsec);
+    ROS_DEBUG("Yolo finished at time: %d,%09d", end_time.sec, end_time.nsec);
+    ROS_DEBUG("Found %d objects", (int)bboxes_vec_res.size());
  
-    //TODO assign bounding boxes
-    return bboxes_res;
+    // Convert bounding boxes to ROS format (compensating for previous padding)
+    for (auto &b : bboxes_vec_res) {
+        darknet_ros_msgs::BoundingBox ros_bbox;
+        ros_bbox.Class = yolo_class_labels[b.obj_id];
+        ros_bbox.prob = b.prob;
+        ros_bbox.x = b.x;
+        ros_bbox.y = std::max(0, int(b.y)-pad_size);
+        ros_bbox.w = b.w;
+        ros_bbox.h = b.h;
+        bboxes_ros_res.bounding_boxes.push_back(ros_bbox);
+    }
+    return bboxes_ros_res;
 }
 
 
@@ -80,8 +105,6 @@ void YoloROSDetector::detectObjectsActionGoalCallback(const darknet_ros_msgs::De
     darknet_ros_msgs::BoundingBoxes bboxes_res;
     darknet_ros_msgs::DetectObjectsResult detect_act_res;
 
-    ROS_INFO("Inside DetectObjects action goal callback");
-
     // Convert the received image from ROS to OpenCV format
     sensor_msgs::Image ros_cam_img = img_act_ptr->img;
 
@@ -93,7 +116,7 @@ void YoloROSDetector::detectObjectsActionGoalCallback(const darknet_ros_msgs::De
     }
 
     // Call Yolo on the received image
-    yoloDetect(cv_cam_img);
+    bboxes_res = yoloDetect(cv_cam_img);
 
     // Produce action response
     detect_act_res.bboxes = bboxes_res;
@@ -104,7 +127,7 @@ void YoloROSDetector::detectObjectsActionGoalCallback(const darknet_ros_msgs::De
 /* DetectObjects action preempt callback */
 void YoloROSDetector::detectObjectsActionPreemptCallback()
 {
-    ROS_INFO("Inside DetectObjects action preempt callback");
+    ROS_DEBUG("Inside DetectObjects action preempt callback");
     // TODO
 }
 
@@ -116,21 +139,18 @@ YoloROSDetector::YoloROSDetector(ros::NodeHandle nh)
     detect_act_srv_(nh_, "detect_objects", 
         boost::bind(&YoloROSDetector::detectObjectsActionGoalCallback, 
             this, _1
-        ),
-        false
+        ), false
     )
 {
     ROS_INFO("YoloROSDetector node started");
 
     readParameters();
     initDarknet();
-    // initDetectionService(); TODO remove
     initDetectionActionServer();
 }
     
 
 /* Destructor */
 YoloROSDetector::~YoloROSDetector() {}
-
 
 }

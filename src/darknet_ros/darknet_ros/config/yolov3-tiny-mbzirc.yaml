@@ -6,6 +6,8 @@ yolo_model:
     name: yolov3-tiny-ball-hardfilter_2000.weights
   threshold:
     value: 0.3
+  nsm_threshold:
+    value: 0.2
   detection_classes:
     names:
       - drone
