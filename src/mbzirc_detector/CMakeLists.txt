@@ -34,8 +34,6 @@ if (CUDA_FOUND)
     -gencode arch=compute_62,code=sm_62
   )
   add_definitions(-DGPU)
-#else()
-#  list(APPEND LIBRARIES "m")
 endif()
 
 
@@ -154,13 +152,17 @@ if (CUDA_FOUND)
     ## Declare a C++ libraries
     cuda_add_library(${PROJECT_NAME}_lib
       src/MbzircDetector.cpp
+      src/ColorDetector.cpp
+      src/cv_algorithms.cpp
     )
     
     ## Add cmake target dependencies of the library
     # add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
     
     ## Declare a C++ executable
-    cuda_add_executable(${PROJECT_NAME}_node src/mbzirc_detector_ros_node.cpp)
+    cuda_add_executable(${PROJECT_NAME}_node 
+        src/mbzirc_detector_ros_node.cpp
+    )
     
     ## Rename C++ executable without prefix
     set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME mbzirc_detector PREFIX "")
@@ -182,6 +184,8 @@ else()
     ## Declare a C++ libraries
     add_library(${PROJECT_NAME}_lib
       src/MbzircDetector.cpp
+      src/ColorDetector.cpp
+      src/cv_algorithms.cpp
     )
     
     ## Add cmake target dependencies of the library

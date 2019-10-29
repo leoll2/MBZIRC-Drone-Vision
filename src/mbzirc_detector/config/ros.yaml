@@ -2,8 +2,8 @@
 
 subscribers:
 
-    input_camera:
-        topic: /mux_cam/image_raw
+  input_camera:
+    topic: /mux_cam/image_raw
 
 
 cameras:

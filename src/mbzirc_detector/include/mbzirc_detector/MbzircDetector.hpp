@@ -6,17 +6,9 @@
 #include <opencv2/imgproc.hpp>
 
 #include <actionlib/client/simple_action_client.h>
-
 #include <darknet_ros_msgs/DetectObjectsAction.h>
+#include "BBox.hpp"
 
-typedef struct BBox {
-    int x;
-    int y;
-    int w;
-    int h;
-    float prob;
-    std::string obj_class;
-} BBox;
 
 class MbzircDetector {
     ros::NodeHandle nh_;

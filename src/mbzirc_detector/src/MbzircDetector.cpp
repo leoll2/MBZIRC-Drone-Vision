@@ -82,8 +82,6 @@ std::vector<BBox> MbzircDetector::callYoloDetector(const sensor_msgs::ImageConst
         ROS_DEBUG("Yolo DetectObjects final state: %s", state.toString().c_str());
         det_res_ptr = yolo_act_cl_.getResult();
         for (const auto &b : det_res_ptr->bboxes.bounding_boxes) {
-        //for (int i = 0; i < det_res_ptr->bboxes.bounding_boxes.size(); ++i)
-        //    darknet_ros_msgs::BoundingBox b = det_res_ptr->bboxes.bounding_boxes[i];
             BBox bbox;
             bbox.x = b.x;
             bbox.y = b.y;
