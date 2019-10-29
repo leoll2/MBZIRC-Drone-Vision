@@ -34,11 +34,15 @@ void YoloROSDetector::readParameters()
 
 
 /* Resize image with padding (letterbox) */
-cv::Mat resize_pad_img(const cv::Mat &src, unsigned pad_size)
+cv::Mat resize_pad_img(const cv::Mat &src, unsigned pad_size_h, unsigned pad_size_v)
 {
     cv::Mat dst;
     cv::Scalar pad_color(0, 0, 0);
-    copyMakeBorder(src, dst, pad_size, pad_size, 0, 0, cv::BORDER_CONSTANT, pad_color);
+    ROS_INFO("About to resize with pad=(H %d V %d)", (int)pad_size_h, (int)pad_size_v); // TODO DEBUG only
+    copyMakeBorder(src, dst, pad_size_v, pad_size_v, pad_size_h, pad_size_h, 
+        cv::BORDER_CONSTANT, pad_color
+    );
+    ROS_INFO("After padding");  // TODO DEBUG only
     return dst;
 }
 
@@ -47,7 +51,7 @@ cv::Mat resize_pad_img(const cv::Mat &src, unsigned pad_size)
 darknet_ros_msgs::BoundingBoxes YoloROSDetector::yoloDetect(cv_bridge::CvImagePtr cv_cam_img)
 {
     int img_width, img_height;
-    int pad_size;
+    int pad_size_h, pad_size_v;
     cv::Mat square_cam_img;
     std::shared_ptr<image_t> imaget_cam_img;
     std::vector<bbox_t> bboxes_vec_res;
@@ -55,8 +59,19 @@ darknet_ros_msgs::BoundingBoxes YoloROSDetector::yoloDetect(cv_bridge::CvImagePt
     ros::Time begin_time, end_time;
 
     // Resize image to make it square
-    pad_size = (cv_cam_img->image.cols - cv_cam_img->image.rows)/2;
-    square_cam_img = resize_pad_img(cv_cam_img->image, pad_size);
+    pad_size_h = pad_size_v = 0;
+    if (cv_cam_img->image.cols > cv_cam_img->image.rows) {
+        // horizontal image
+        pad_size_v = (cv_cam_img->image.cols - cv_cam_img->image.rows)/2;
+        square_cam_img = resize_pad_img(cv_cam_img->image, 0, pad_size_v);
+    } else if (cv_cam_img->image.rows > cv_cam_img->image.cols) {
+        // vertical image
+        pad_size_h = (cv_cam_img->image.rows - cv_cam_img->image.cols)/2;
+        square_cam_img = resize_pad_img(cv_cam_img->image, pad_size_h, 0);
+    } else {
+        // already square img
+        square_cam_img = cv_cam_img->image;
+    }
     img_width = square_cam_img.size().width;
     img_height = square_cam_img.size().height;
 
@@ -77,8 +92,8 @@ darknet_ros_msgs::BoundingBoxes YoloROSDetector::yoloDetect(cv_bridge::CvImagePt
         darknet_ros_msgs::BoundingBox ros_bbox;
         ros_bbox.Class = yolo_class_labels[b.obj_id];
         ros_bbox.prob = b.prob;
-        ros_bbox.x = b.x;
-        ros_bbox.y = std::max(0, int(b.y)-pad_size);
+        ros_bbox.x = std::max(0, int(b.x)-pad_size_h);
+        ros_bbox.y = std::max(0, int(b.y)-pad_size_v);
         ros_bbox.w = b.w;
         ros_bbox.h = b.h;
         bboxes_ros_res.bounding_boxes.push_back(ros_bbox);

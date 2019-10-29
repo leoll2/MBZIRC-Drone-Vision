@@ -23,5 +23,5 @@ namespace cv_alg {
 
     std::vector<std::vector<cv::Point>> findContours(const cv::Mat &src);
 
-    void resize(unsigned &x, unsigned &y, unsigned &w, unsigned &h, const unsigned scale);
+    cv::Rect resizeBox(const cv::Rect &r, const unsigned scale);
 }

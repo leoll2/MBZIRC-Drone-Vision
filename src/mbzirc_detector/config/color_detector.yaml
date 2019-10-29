@@ -1,0 +1,18 @@
+## Color detector configuration file
+
+color_detector:
+
+    # HSV thresholds
+    hsv_thresh:
+        hue_min: 0 
+        hue_max: 10
+        sat_min: 200
+        sat_max: 255
+        val_min: 70
+        val_max: 255
+
+    # Minimum area (pixel); smaller objects are ignored
+    min_area_pix: 6
+
+    # How many objects to detect at the same time
+    max_objects: 3

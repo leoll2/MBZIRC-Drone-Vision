@@ -163,25 +163,23 @@ namespace cv_alg {
      * Note: input values get modified
      * Parameters
      * ----------
-     * x : unsigned
-     *    top-left corner coordinate
-     * y : unsigned
-     *    bottom-right corner coordinate
-     * w : unsigned
-     *    initial width
-     * h : unsigned
-     *    initial height
+     * r : unsigned
+     *    initial Rectangle
      * scale : unsigned
      *    scaling factor
      */
-    void resize(unsigned &x, unsigned &y, unsigned &w, unsigned &h, const unsigned scale)
+    cv::Rect resizeBox(const cv::Rect &r, const unsigned scale)
     {
-        x += w/2;
-        y += h/2;
-        w *= scale;
-        h *= scale;
+        cv::Rect res_box;
 
-        x = (unsigned)std::max(0, (int)x - (int)w/2);
-        y = (unsigned)std::max(0, (int)y - (int)h/2);
+        res_box.x = r.x + r.width/2;
+        res_box.y = r.y + r.height/2;
+        res_box.width = r.width * scale;
+        res_box.height = r.height * scale;
+
+        res_box.x = std::max(0, res_box.x - res_box.width/2);
+        res_box.y = std::max(0, res_box.y - res_box.height/2);
+
+        return res_box;
     }
 }

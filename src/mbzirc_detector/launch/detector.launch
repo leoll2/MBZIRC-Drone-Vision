@@ -8,8 +8,12 @@
     <!-- ROS configuration -->
     <arg name="ros_param_file" default="$(find mbzirc_detector)/config/ros.yaml"/>
 
+    <!-- Color detector configuration -->
+    <arg name="color_det_param_file" default="$(find mbzirc_detector)/config/color_detector.yaml"/>
+
     <!-- Load parameters -->
     <rosparam command="load" ns="mbzirc_detector" file="$(arg ros_param_file)"/>
+    <rosparam command="load" ns="mbzirc_detector" file="$(arg color_det_param_file)"/>
 
     <!-- Start high-level detector -->
     <node pkg="mbzirc_detector" type="mbzirc_detector" name="mbzirc_detector" output="screen" launch-prefix="$(arg launch_prefix)">

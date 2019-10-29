@@ -38,8 +38,8 @@ ColorDetector::~ColorDetector() {}
 // TODO loadContour()
 
 
-bool compareContAreaPairs(std::pair<std::vector<cv::Point>, double>> a,
-    std::pair<std::vector<cv::Point>, double>> b)
+bool compareContAreaPairs(std::pair<std::vector<cv::Point>, double> a,
+    std::pair<std::vector<cv::Point>, double> b)
 {
     return a.second > b.second;
 }
@@ -83,11 +83,17 @@ std::vector<BBox> ColorDetector::detect(const cv::Mat &img)
             cnts_area.erase(cnts_area.begin() + this->max_objects, cnts_area.end());
 
         for (const auto &ca : cnts_area) {
-            cv::Rect brect = cv::boundingRect(c.first);
-            // TODO
+            BBox b;
+            cv::Rect roi = cv::boundingRect(ca.first);
+            //cv::Rect roi = cv_alg::resizeBox(brect, 3);
+            b.x = roi.x;
+            b.y = roi.y;
+            b.w = roi.width;
+            b.h = roi.height;
+            b.prob = 0.5;   // TODO
+            b.obj_class = "ball";
+            res_bboxes.push_back(b);
         }
     }
-
-    // TODO assign result
     return res_bboxes;
 }

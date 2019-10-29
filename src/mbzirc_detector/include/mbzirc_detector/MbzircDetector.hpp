@@ -8,16 +8,22 @@
 #include <actionlib/client/simple_action_client.h>
 #include <darknet_ros_msgs/DetectObjectsAction.h>
 #include "BBox.hpp"
+#include "color_detector/cv_algorithms.hpp"
+#include "color_detector/ColorDetector.hpp"
 
 
 class MbzircDetector {
+    enum DetectType {YOLO, COLOR_AND_YOLO};
+    
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;
     image_transport::Subscriber image_sub_;
     ros::NodeHandle mux_nh_;
     ros::ServiceClient cam_sel_client;
     actionlib::SimpleActionClient<darknet_ros_msgs::DetectObjectsAction> yolo_act_cl_;
+    ColorDetector *color_detector;
 
+    DetectType det_strategy;
     std::string input_camera_topic;
     std::string long_camera_name;
     std::string long_camera_topic;
@@ -27,8 +33,12 @@ class MbzircDetector {
     bool short_camera_stereo;
 
     void readParameters();
+    void initColorDetector();
     void switchCamera(std::string camera_topic);
-    std::vector<BBox> callYoloDetector(const sensor_msgs::ImageConstPtr& msg);
+    std::vector<BBox> callYoloDetector(const sensor_msgs::ImageConstPtr& msg_img);
+    std::vector<BBox> callYoloDetector(const cv::Mat &img, std_msgs::Header header);
+    std::vector<BBox> callColorDetector(const cv::Mat &img);
+    std::vector<BBox> detect(const sensor_msgs::ImageConstPtr& msg_img);
 public:
     MbzircDetector(ros::NodeHandle nh);
     ~MbzircDetector();
