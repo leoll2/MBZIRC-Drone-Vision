@@ -23,8 +23,10 @@ void ColorDetector::setColorThresholds(const std::vector<unsigned> &th)
 
 
 /* Constructor */
-ColorDetector::ColorDetector(std::vector<unsigned> th)
+ColorDetector::ColorDetector(std::vector<unsigned> th, double min_area_pix,
+    unsigned max_objects)
 {
+    this->min_area_pix = min_area_pix;
     setColorThresholds(th);
     // TODO: setContour
 }
@@ -34,6 +36,13 @@ ColorDetector::~ColorDetector() {}
 
 
 // TODO loadContour()
+
+
+bool compareContAreaPairs(std::pair<std::vector<cv::Point>, double>> a,
+    std::pair<std::vector<cv::Point>, double>> b)
+{
+    return a.second > b.second;
+}
 
 
 /* Detect objects in the image */
@@ -55,6 +64,29 @@ std::vector<BBox> ColorDetector::detect(const cv::Mat &img)
 
     // Find the contours
     std::vector<std::vector<cv::Point>> contours = cv_alg::findContours(color_mask);
+
+    if (contours.size() > 0) {
+
+        // Map contours to their area, filtering out irrelevant ones
+        std::vector<std::pair<std::vector<cv::Point>, double>> cnts_area;
+        for (const auto &c : contours) {
+            double area = cv::contourArea(c);
+            if (area > this->min_area_pix)
+                cnts_area.push_back(std::make_pair(c, cv::contourArea(c)));
+        }
+
+        // Sort by area (largest first)
+        std::sort(cnts_area.begin(), cnts_area.end(), compareContAreaPairs);
+
+        // Truncate, keeping only the largest
+        if (cnts_area.size() > this->max_objects)
+            cnts_area.erase(cnts_area.begin() + this->max_objects, cnts_area.end());
+
+        for (const auto &ca : cnts_area) {
+            cv::Rect brect = cv::boundingRect(c.first);
+            // TODO
+        }
+    }
 
     // TODO assign result
     return res_bboxes;

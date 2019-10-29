@@ -18,10 +18,13 @@ class ColorDetector {
     cv::Scalar ub1;
     cv::Scalar lb2;
     cv::Scalar ub2;
+    double min_area_pix;
+    unsigned max_objects;
 
     void setColorThresholds(const std::vector<unsigned> &th); 
 public:
-    ColorDetector(std::vector<unsigned> th);
+    ColorDetector(std::vector<unsigned> th, double min_area_pix,
+        unsigned max_objects);
     ~ColorDetector();
     std::vector<BBox> detect(const cv::Mat &img);
 };
