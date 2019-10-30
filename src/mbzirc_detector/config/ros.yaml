@@ -6,6 +6,28 @@ subscribers:
         topic: /mux_cam/image_raw
 
 
+publishers:
+    
+    # Note: found_object not implemented yet
+    found_object:
+        enable: false
+        topic: /darknet_ros/found_object
+        queue_size: 1
+        latch: false
+
+    bounding_boxes:
+        enable: true
+        topic: /darknet_ros/bounding_boxes
+        queue_size: 1
+        latch: true
+
+    detection_image:
+        enable: true
+        topic: /darknet_ros/detection_image
+        queue_size: 1
+        latch: true
+
+
 cameras:
 
     long_dist:

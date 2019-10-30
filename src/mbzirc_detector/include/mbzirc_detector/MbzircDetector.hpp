@@ -19,6 +19,8 @@ class MbzircDetector {
     image_transport::ImageTransport it_;
     image_transport::Subscriber image_sub_;
     ros::NodeHandle mux_nh_;
+    ros::Publisher bboxes_pub_;
+    ros::Publisher det_img_pub_;
     ros::ServiceClient cam_sel_client;
     actionlib::SimpleActionClient<darknet_ros_msgs::DetectObjectsAction> yolo_act_cl_;
     ColorDetector *color_detector;
@@ -31,6 +33,14 @@ class MbzircDetector {
     std::string short_camera_name;
     std::string short_camera_topic;
     bool short_camera_stereo;
+    std::string bboxes_topic;
+    bool bboxes_topic_enable;
+    int bboxes_q_size;
+    bool bboxes_latch;
+    std::string det_img_topic;
+    bool det_img_topic_enable;
+    int det_img_q_size;
+    bool det_img_latch;
 
     void readParameters();
     void initColorDetector();

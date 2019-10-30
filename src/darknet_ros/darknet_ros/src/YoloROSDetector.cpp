@@ -38,11 +38,9 @@ cv::Mat resize_pad_img(const cv::Mat &src, unsigned pad_size_h, unsigned pad_siz
 {
     cv::Mat dst;
     cv::Scalar pad_color(0, 0, 0);
-    ROS_INFO("About to resize with pad=(H %d V %d)", (int)pad_size_h, (int)pad_size_v); // TODO DEBUG only
     copyMakeBorder(src, dst, pad_size_v, pad_size_v, pad_size_h, pad_size_h, 
         cv::BORDER_CONSTANT, pad_color
     );
-    ROS_INFO("After padding");  // TODO DEBUG only
     return dst;
 }
 

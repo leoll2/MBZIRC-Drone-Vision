@@ -6,7 +6,17 @@
 void MbzircDetector::readParameters()
 {
     nh_.getParam("subscribers/input_camera/topic", input_camera_topic);
+
+    nh_.getParam("publishers/bounding_boxes/topic", bboxes_topic);
+    nh_.getParam("publishers/bounding_boxes/enable", bboxes_topic_enable);
+    nh_.getParam("publishers/bounding_boxes/queue_size", bboxes_q_size);
+    nh_.getParam("publishers/bounding_boxes/latch", bboxes_latch);
     
+    nh_.getParam("publishers/detection_image/topic", det_img_topic);
+    nh_.getParam("publishers/detection_image/enable", det_img_topic_enable);
+    nh_.getParam("publishers/detection_image/queue_size", det_img_q_size);
+    nh_.getParam("publishers/detection_image/latch", det_img_latch);
+
     nh_.getParam("cameras/long_dist/name", long_camera_name);
     nh_.getParam("cameras/long_dist/topic", long_camera_topic);
     nh_.getParam("cameras/long_dist/stereo", long_camera_stereo);
@@ -82,6 +92,18 @@ MbzircDetector::MbzircDetector(ros::NodeHandle nh)
     // Init color detector
     initColorDetector();
     ROS_INFO("Successfully initialized color detector");
+
+    // Publish bounding boxes and detection image
+    if (bboxes_topic_enable) {
+        bboxes_pub_ = nh_.advertise<darknet_ros_msgs::BoundingBoxes>(
+            bboxes_topic, bboxes_q_size, bboxes_latch
+        );
+    }
+    if (det_img_topic_enable) {
+        det_img_pub_ = nh_.advertise<sensor_msgs::Image>(
+            det_img_topic, det_img_q_size, det_img_latch
+        );
+    }
 
     // Subscribe to camera input
     image_sub_ = it_.subscribe(input_camera_topic, 1, 
@@ -221,6 +243,7 @@ std::vector<BBox> MbzircDetector::detect(const sensor_msgs::ImageConstPtr& msg_i
 void MbzircDetector::cameraCallback(const sensor_msgs::ImageConstPtr& msg)
 {
     std::vector<BBox> bboxes;
+    darknet_ros_msgs::BoundingBoxes ros_bboxes;
 
     ROS_INFO("Detector received a new input frame");
     // Change camera
@@ -235,6 +258,39 @@ void MbzircDetector::cameraCallback(const sensor_msgs::ImageConstPtr& msg)
         ROS_INFO("\t %s at [(%d,%d),(%d,%d)] with prob %f",
             b.obj_class.c_str(), b.x, b.y, b.x+b.w, b.y+b.h, b.prob    
         );
+    }
+
+    // Publish result
+    if (bboxes_topic_enable) {
+        for (const auto &b : bboxes) {
+            darknet_ros_msgs::BoundingBox ros_bbox;
+            ros_bbox.Class = b.obj_class;
+            ros_bbox.prob = b.prob;
+            ros_bbox.x = b.x;
+            ros_bbox.y = b.y;
+            ros_bbox.w = b.w;
+            ros_bbox.h = b.h;
+            ros_bboxes.bounding_boxes.push_back(ros_bbox);
+        }
+        bboxes_pub_.publish(ros_bboxes);
+    }
+    if (det_img_topic_enable) {
+        cv_bridge::CvImagePtr det_img_ptr;
+        // Get raw image
+        try {
+            det_img_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+        } catch (cv_bridge::Exception& cve) {
+            ROS_ERROR("cv_bridge: error converting img to OpenCV: %s", cve.what());
+        }
+        // Draw bounding boxes
+        for (const auto &b : bboxes) {
+            cv::rectangle(det_img_ptr->image, cv::Rect(b.x, b.y, b.w, b.h),
+                cv::Scalar(100, 200, 0), 2
+            );
+        }
+        sensor_msgs::ImagePtr det_img_msg = cv_bridge::CvImage(std_msgs::Header(), 
+            "bgr8", det_img_ptr->image).toImageMsg();
+        det_img_pub_.publish(det_img_msg);
     }
 }
 
