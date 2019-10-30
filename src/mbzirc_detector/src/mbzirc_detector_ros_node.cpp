@@ -14,7 +14,6 @@ void shutdownHandler(int sig)
 
 int main(int argc, char** argv)
 {
-    // TODO: override name
     ros::init(argc, argv, "mbzirc_detector");
     ros::NodeHandle nodeHandle("~");
     MbzircDetector detector(nodeHandle);
