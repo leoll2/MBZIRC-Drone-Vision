@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(state_estimator)
+project(distance_finder)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
@@ -11,6 +11,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   sensor_msgs
   std_msgs
+  actionlib
+  actionlib_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -56,17 +58,18 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   Action1.action
-#   Action2.action
-# )
+add_action_files(
+  FILES
+    GetDistance.action
+)
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   sensor_msgs#   std_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  sensor_msgs
+  std_msgs
+  actionlib_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -100,7 +103,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS
     include
-  #LIBRARIES state_estimator
+  #LIBRARIES distance_finder
   CATKIN_DEPENDS
     cv_bridge 
     image_transport 
@@ -124,16 +127,16 @@ include_directories(
 
 ## Declare a C++ library
 add_library(${PROJECT_NAME}_lib
-   src/StateEstimator.cpp
+   src/DistanceFinder.cpp
 )
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME}_node src/state_estimator_ros_node.cpp)
+add_executable(${PROJECT_NAME}_node src/distance_finder_ros_node.cpp)
 
 ## Rename C++ executable without prefix
-set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME state_estimator PREFIX "")
+set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME distance_finder PREFIX "")
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
@@ -145,7 +148,7 @@ target_link_libraries(${PROJECT_NAME}_lib
 )
 
 target_link_libraries(${PROJECT_NAME}_node
-    $(PROJECT_NAME)_lib
+    ${PROJECT_NAME}_lib
 )
 
 #############
@@ -195,7 +198,7 @@ target_link_libraries(${PROJECT_NAME}_node
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_state_estimator.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_distance_finder.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

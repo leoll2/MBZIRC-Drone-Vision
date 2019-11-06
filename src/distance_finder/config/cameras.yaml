@@ -1,0 +1,52 @@
+# Videocamera(s) configuration file
+
+supported_cams: [mobius, runcam2, ausdom]
+
+# Mobius parameters 640x480 1/3'' sensor 4:3 
+# TODO these numbers are computed from a Runcam, not Mobius. Calibration is needed! 
+mobius:
+    resolution:
+        width: 640 
+        height: 480
+    lens: 
+        focal_length: 0.0028    # [m] 
+    sensor: 
+        width: 0.0048           # [m] 
+        height: 0.0036          # [m] 
+        diag: 0.006             # [m] 
+    calibration: 
+        distance: 2.4           # [m] 
+    stereo: false
+
+
+# RunCam2 parameters 640x480 1/3'' sensor 4:3 
+runcam2:
+    resolution:
+        width: 640 
+        height: 480
+    lens: 
+        focal_length: 0.0028    # [m] 
+    sensor: 
+        width: 0.0048           # [m] 
+        height: 0.0036          # [m] 
+        diag: 0.006             # [m] 
+    calibration: 
+        distance: 2.4           # [m] 
+    stereo: false
+
+
+# Ausdom webcam parameters 640x480 1/3'' sensor 4:3 
+# TODO these numbers are computed from a Runcam, not Mobius. Calibration is needed! 
+ausdom:
+    resolution:
+        width: 640 
+        height: 480
+    lens: 
+        focal_length: 0.0028    # [m] 
+    sensor: 
+        width: 0.0048           # [m] 
+        height: 0.0036          # [m] 
+        diag: 0.006             # [m] 
+    calibration: 
+        distance: 2.4           # [m] 
+    stereo: false

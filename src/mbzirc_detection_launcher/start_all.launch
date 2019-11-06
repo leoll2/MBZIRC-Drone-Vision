@@ -8,6 +8,9 @@
     <node pkg="topic_tools" type="mux" name="mux_cam" args="mux_cam/image_raw mobius_cam/image_raw ausdom_cam/image_raw mux:=mux_cam">
     </node>
 
+    <!-- Distance finder -->
+    <include file="$(find distance_finder)/launch/distance_finder.launch" />
+
     <!-- Darknet Yolo detector -->
     <include file="$(find darknet_ros)/launch/darknet.launch" />
 

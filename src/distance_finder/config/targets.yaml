@@ -1,0 +1,11 @@
+# Target(s) configuration file
+
+target:
+
+    flying_ball:
+        color: red
+        radius: 0.075
+
+    ground_ball:
+        color: white
+        radius: 0.3

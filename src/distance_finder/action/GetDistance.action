@@ -1,0 +1,15 @@
+# Goal
+string cam_name
+bool use_dmap
+uint32 x
+uint32 y
+uint32 w
+uint32 h
+---
+# Result
+float32 dist
+float32 err_x_m
+float32 err_y_m
+---
+# Feedback
+int32 elapsed_time
