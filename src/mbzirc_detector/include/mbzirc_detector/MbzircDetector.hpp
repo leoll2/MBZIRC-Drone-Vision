@@ -12,6 +12,7 @@
 #include "BBox.hpp"
 #include "color_detector/cv_algorithms.hpp"
 #include "color_detector/ColorDetector.hpp"
+#include "distance_finder/DistanceFinder.hpp"
 
 
 class MbzircDetector {
@@ -25,6 +26,7 @@ class MbzircDetector {
     ros::Publisher det_img_pub_;
     ros::ServiceClient cam_sel_client;
     actionlib::SimpleActionClient<darknet_ros_msgs::DetectObjectsAction> yolo_act_cl_;
+    actionlib::SimpleActionClient<distance_finder::GetDistanceAction> dist_act_cl_;
     ColorDetector *color_detector;
 
     DetectType det_strategy;

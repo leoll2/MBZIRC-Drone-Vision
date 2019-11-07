@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   std_msgs
   darknet_ros
+  distance_finder
 )
 
 ## Find OpenCV macros and libraries
@@ -129,6 +130,7 @@ catkin_package(
     sensor_msgs
     std_msgs
     darknet_ros
+    distance_finder
   # DEPENDS system_lib
 )
 

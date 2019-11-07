@@ -1,11 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <launch>
+
+  <!-- ROS configuration -->
+  <arg name="ros_param_file" default="$(find distance_finder)/config/ros.yaml"/>
+
   <!-- Supported cameras configuration file -->
   <arg name="camera_params"         default="$(find distance_finder)/config/cameras.yaml"/>
   <arg name="target_params"         default="$(find distance_finder)/config/targets.yaml"/>
 
   <!-- Load parameters -->
+  <rosparam command="load" ns="distance_finder" file="$(arg ros_param_file)"/>
   <rosparam command="load" ns="distance_finder" file="$(arg camera_params)"/>
   <rosparam command="load" ns="distance_finder" file="$(arg target_params)"/>
 

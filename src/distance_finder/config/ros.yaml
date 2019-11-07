@@ -1,0 +1,15 @@
+# MBZIRC distance finder configuration of ROS parameters
+
+subscribers:
+    
+    input_bbox:
+        topic: /mbzirc_detector/bounding_boxes
+
+
+publishers:
+
+    target_pos:
+        topic: /distance_finder/target_pos
+        queue_size: 1
+        latch: true
+

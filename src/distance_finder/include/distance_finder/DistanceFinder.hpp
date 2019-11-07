@@ -8,6 +8,9 @@
 
 #include <actionlib/server/simple_action_server.h>
 
+#include <distance_finder/ObjectBox.h>
+#include <distance_finder/ObjectBoxes.h>
+#include <distance_finder/TargetPos.h>
 #include <distance_finder/GetDistanceAction.h>
 
 namespace distance_finder {
@@ -45,11 +48,18 @@ typedef struct PosError {
 class DistanceFinder
 {
     ros::NodeHandle nh_;
+    ros::Subscriber bbox_sub_;
+    ros::Publisher target_pos_pub_;
     actionlib::SimpleActionServer<distance_finder::GetDistanceAction> dist_act_srv_;
     std::map<std::string, CameraParameters> cam_params;
     TargetParameters fly_ball_params;
     TargetParameters gnd_ball_params;
+    std::string input_bbox_topic;
+    std::string target_pos_topic;
+    int target_pos_q_size;
+    bool target_pos_latch;
 
+    void readROSParameters();
     void initTargetParameters();
     void initCamParameters();
     void initDistanceActionServer();
@@ -62,6 +72,7 @@ class DistanceFinder
 public:
     DistanceFinder(ros::NodeHandle nh);
     ~DistanceFinder();
+    void bboxesCallback(const distance_finder::ObjectBoxes::ConstPtr& msg);
 };
 
 }

@@ -3,6 +3,17 @@
 
 namespace distance_finder {
 
+/* Read the ROS configuration from file */
+void DistanceFinder::readROSParameters()
+{
+    nh_.getParam("subscribers/input_bbox/topic", input_bbox_topic);
+
+    nh_.getParam("publishers/target_pos/topic", target_pos_topic);
+    nh_.getParam("publishers/target_pos/queue_size", target_pos_q_size);
+    nh_.getParam("publishers/target_pos/latch", target_pos_latch);
+}
+
+
 /* Initialize the parameters for each supported camera */
 void DistanceFinder::initCamParameters()
 {
@@ -125,15 +136,33 @@ DistanceFinder::DistanceFinder(ros::NodeHandle nh)
         ), false
     )
 {
-    ROS_INFO("DistanceFinder node started");
-
     initTargetParameters();
     initCamParameters();
     initDistanceActionServer();
+
+    // Publish position
+    target_pos_pub_ = nh_.advertise<distance_finder::TargetPos>(
+        target_pos_topic, target_pos_q_size, target_pos_latch
+    );
+
+    // Subscribe to incoming bounding boxes
+    bbox_sub_ = nh_.subscribe(input_bbox_topic, 1,
+        &DistanceFinder::bboxesCallback, this
+    );
+
+    ROS_INFO("DistanceFinder node fully initialized");
 }
 
 
 /* Destructor */
 DistanceFinder::~DistanceFinder() {}
 
+
+/* Callback for new bounding box received */
+void DistanceFinder::bboxesCallback(const distance_finder::ObjectBoxes::ConstPtr& msg)
+{
+    ROS_INFO("Inside bboxesCallback");    // TODO DEBUG only
+    //TODO
 }
+
+} /* end of distance_finder namespace */

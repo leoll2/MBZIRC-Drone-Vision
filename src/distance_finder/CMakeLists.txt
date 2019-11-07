@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   actionlib
   actionlib_msgs
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -44,11 +45,12 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+    ObjectBox.msg
+    ObjectBoxes.msg
+    TargetPos.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -110,6 +112,7 @@ catkin_package(
     roscpp 
     sensor_msgs 
     std_msgs
+    message_runtime
   #DEPENDS system_lib
 )
 
@@ -126,29 +129,35 @@ include_directories(
 )
 
 ## Declare a C++ library
-add_library(${PROJECT_NAME}_lib
-   src/DistanceFinder.cpp
-)
+#add_library(${PROJECT_NAME}_lib
+#   src/DistanceFinder.cpp
+#)
+#add_dependencies(${PROJECT_NAME}_lib ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME}_node src/distance_finder_ros_node.cpp)
+add_executable(${PROJECT_NAME}_node 
+  src/distance_finder_ros_node.cpp 
+  src/DistanceFinder.cpp
+)
 
 ## Rename C++ executable without prefix
 set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME distance_finder PREFIX "")
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-# add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_dependencies(${PROJECT_NAME}_node ${PROJECT_NAME}_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME}_lib
-   ${catkin_LIBRARIES}
-)
+#target_link_libraries(${PROJECT_NAME}_lib
+#   ${catkin_LIBRARIES}
+#)
 
 target_link_libraries(${PROJECT_NAME}_node
-    ${PROJECT_NAME}_lib
+   ${catkin_LIBRARIES}
+   #${PROJECT_NAME}_lib
 )
 
 #############

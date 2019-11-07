@@ -75,6 +75,7 @@ MbzircDetector::MbzircDetector(ros::NodeHandle nh)
     it_(nh_),
     mux_nh_("mux_cam"),
     yolo_act_cl_(nh_, "/darknet_ros/detect_objects", true),
+    dist_act_cl_(nh_, "/distance_finder/get_distance", true),
     det_strategy(COLOR_AND_YOLO)
 {
     // Read the configuration
