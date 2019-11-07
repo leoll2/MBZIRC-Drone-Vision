@@ -76,7 +76,7 @@ MbzircDetector::MbzircDetector(ros::NodeHandle nh)
     mux_nh_("mux_cam"),
     yolo_act_cl_(nh_, "/darknet_ros/detect_objects", true),
     dist_act_cl_(nh_, "/distance_finder/get_distance", true),
-    det_strategy(COLOR_AND_YOLO)
+    det_strategy(YOLO)
 {
     // Read the configuration
     readParameters();
@@ -96,7 +96,12 @@ MbzircDetector::MbzircDetector(ros::NodeHandle nh)
 
     // Publish bounding boxes and detection image
     if (bboxes_topic_enable) {
-        bboxes_pub_ = nh_.advertise<darknet_ros_msgs::BoundingBoxes>(
+        /* TODO old code
+        bboxes_pub_ = nh_.advertise<darknet_ros_msgs::BoundingBoxes>( 
+            bboxes_topic, bboxes_q_size, bboxes_latch
+        );
+        */
+        bboxes_pub_ = nh_.advertise<distance_finder::ObjectBoxes>( 
             bboxes_topic, bboxes_q_size, bboxes_latch
         );
     }
@@ -244,7 +249,8 @@ std::vector<BBox> MbzircDetector::detect(const sensor_msgs::ImageConstPtr& msg_i
 void MbzircDetector::cameraCallback(const sensor_msgs::ImageConstPtr& msg)
 {
     std::vector<BBox> bboxes;
-    darknet_ros_msgs::BoundingBoxes ros_bboxes;
+    // darknet_ros_msgs::BoundingBoxes ros_bboxes; TODO old code
+    distance_finder::ObjectBoxes ros_bboxes;
 
     ROS_INFO("Detector received a new input frame");
     // Change camera
@@ -261,9 +267,10 @@ void MbzircDetector::cameraCallback(const sensor_msgs::ImageConstPtr& msg)
         );
     }
 
-    // Publish result
-    if (bboxes_topic_enable) {
+    // Publish result (if non empty)
+    if (bboxes_topic_enable && !bboxes.empty()) {
         for (const auto &b : bboxes) {
+            /* TODO old code
             darknet_ros_msgs::BoundingBox ros_bbox;
             ros_bbox.Class = b.obj_class;
             ros_bbox.prob = b.prob;
@@ -271,7 +278,14 @@ void MbzircDetector::cameraCallback(const sensor_msgs::ImageConstPtr& msg)
             ros_bbox.y = b.y;
             ros_bbox.w = b.w;
             ros_bbox.h = b.h;
-            ros_bboxes.bounding_boxes.push_back(ros_bbox);
+            */
+            distance_finder::ObjectBox ros_bbox;
+            ros_bbox.obj_class = b.obj_class;
+            ros_bbox.x = b.x + (b.w/2);
+            ros_bbox.y = b.y + (b.h/2);
+            ros_bbox.w = b.w;
+            ros_bbox.h = b.h;
+            ros_bboxes.obj_boxes.push_back(ros_bbox);
         }
         bboxes_pub_.publish(ros_bboxes);
     }

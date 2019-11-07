@@ -136,6 +136,7 @@ DistanceFinder::DistanceFinder(ros::NodeHandle nh)
         ), false
     )
 {
+    readROSParameters();
     initTargetParameters();
     initCamParameters();
     initDistanceActionServer();

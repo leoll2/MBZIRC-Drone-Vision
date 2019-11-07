@@ -9,7 +9,10 @@
     </node>
 
     <!-- Distance finder -->
-    <include file="$(find distance_finder)/launch/distance_finder.launch" />
+    <group>
+        <remap from="/distance_finder/bounding_boxes" to="/mbzirc_detector/bounding_boxes" />
+        <include file="$(find distance_finder)/launch/distance_finder.launch" />
+    </group>
 
     <!-- Darknet Yolo detector -->
     <include file="$(find darknet_ros)/launch/darknet.launch" />

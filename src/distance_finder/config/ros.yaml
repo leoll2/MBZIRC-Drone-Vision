@@ -3,7 +3,7 @@
 subscribers:
     
     input_bbox:
-        topic: /mbzirc_detector/bounding_boxes
+        topic: /distance_finder/bounding_boxes
 
 
 publishers:

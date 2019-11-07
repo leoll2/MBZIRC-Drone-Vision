@@ -11,19 +11,19 @@ publishers:
     # Note: found_object not implemented yet
     found_object:
         enable: false
-        topic: /darknet_ros/found_object
+        topic: /mbzirc_detector/found_object
         queue_size: 1
         latch: false
 
     bounding_boxes:
         enable: true
-        topic: /darknet_ros/bounding_boxes
+        topic: /mbzirc_detector/bounding_boxes
         queue_size: 1
         latch: true
 
     detection_image:
         enable: true
-        topic: /darknet_ros/detection_image
+        topic: /mbzirc_detector/detection_image
         queue_size: 1
         latch: true
 
