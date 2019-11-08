@@ -55,13 +55,24 @@ void MbzircDetector::initColorDetector()
 
 
 /* Change the detector input channel, i.e. the videocamera to be read */
-void MbzircDetector::switchCamera(std::string new_cam_topic)
+void MbzircDetector::switchCamera(CameraType new_cam_range)
 {
     topic_tools::MuxSelect srv;
-    srv.request.topic = new_cam_topic;
+
+    switch (new_cam_range) {
+        case SHORT_RANGE:
+            srv.request.topic = short_camera_topic;
+            break;
+        case LONG_RANGE:
+            srv.request.topic = long_camera_topic;
+            break;
+        default:
+            ROS_ERROR("Attempting to switch to an unsupported camera mode");
+    }
+
     if (cam_sel_client.call(srv)) {
         ROS_DEBUG("Switched camera from %s to %s", 
-            srv.response.prev_topic.c_str(), new_cam_topic.c_str()
+            srv.response.prev_topic.c_str(), srv.request.topic.c_str()
         );
     } else {
         ROS_ERROR("Failed to switch camera");
@@ -76,6 +87,7 @@ MbzircDetector::MbzircDetector(ros::NodeHandle nh)
     mux_nh_("mux_cam"),
     yolo_act_cl_(nh_, "/darknet_ros/detect_objects", true),
     dist_act_cl_(nh_, "/distance_finder/get_distance", true),
+    current_cam_range(LONG_RANGE),
     det_strategy(YOLO)
 {
     // Read the configuration
@@ -96,11 +108,6 @@ MbzircDetector::MbzircDetector(ros::NodeHandle nh)
 
     // Publish bounding boxes and detection image
     if (bboxes_topic_enable) {
-        /* TODO old code
-        bboxes_pub_ = nh_.advertise<darknet_ros_msgs::BoundingBoxes>( 
-            bboxes_topic, bboxes_q_size, bboxes_latch
-        );
-        */
         bboxes_pub_ = nh_.advertise<distance_finder::ObjectBoxes>( 
             bboxes_topic, bboxes_q_size, bboxes_latch
         );
@@ -278,7 +285,8 @@ void MbzircDetector::cameraCallback(const sensor_msgs::ImageConstPtr& msg)
             ros_bboxes.obj_boxes.push_back(ros_bbox);
         }
         ros_bboxes.header = msg->header;
-        ros_bboxes.cam_name = "mobius"; // TODO this should not be hardcoded
+        ros_bboxes.cam_name = (current_cam_range == SHORT_RANGE) 
+            ? short_camera_name : long_camera_name;
         bboxes_pub_.publish(ros_bboxes);
     }
     if (det_img_topic_enable) {

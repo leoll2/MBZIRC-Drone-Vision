@@ -16,6 +16,7 @@
 
 
 class MbzircDetector {
+    enum CameraType {SHORT_RANGE, LONG_RANGE};
     enum DetectType {YOLO, COLOR_AND_YOLO};
     
     ros::NodeHandle nh_;
@@ -29,6 +30,7 @@ class MbzircDetector {
     actionlib::SimpleActionClient<distance_finder::GetDistanceAction> dist_act_cl_;
     ColorDetector *color_detector;
 
+    CameraType current_cam_range;
     DetectType det_strategy;
     std::string input_camera_topic;
     std::string long_camera_name;
@@ -48,7 +50,7 @@ class MbzircDetector {
 
     void readParameters();
     void initColorDetector();
-    void switchCamera(std::string camera_topic);
+    void switchCamera(CameraType new_camera_range);
     std::vector<BBox> callYoloDetector(const sensor_msgs::ImageConstPtr& msg_img);
     std::vector<BBox> callYoloDetector(const cv::Mat &img, std_msgs::Header header);
     std::vector<BBox> callColorDetector(const cv::Mat &img);
