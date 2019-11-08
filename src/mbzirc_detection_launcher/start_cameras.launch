@@ -4,9 +4,12 @@
 
     <!-- Suggested camera sizes: 640x480, 1280x720 -->
 
-    <!-- Ausdom camera -->
+    <arg name="short_cam" default="zed" />
+    <arg name="long_cam" default="mobius" />
+
+    <!-- Short-range camera -->
     <include file="$(find video_stream_opencv)/launch/camera.launch">
-    	<arg name="camera_name" value="ausdom_cam" />
+    	<arg name="camera_name" value="$(arg short_cam)" />
     	<!-- device identifier /dev/videoX -->
     	<arg name="video_stream_provider" value="0" />
     	<!-- camera fps -->
@@ -19,9 +22,9 @@
 	    <arg name="visualize" value="false"/>
     </include>
 
-    <!-- Mobius camera -->
+    <!-- Long-range camera -->
     <include file="$(find video_stream_opencv)/launch/camera.launch">
-    	<arg name="camera_name" value="mobius_cam" />
+    	<arg name="camera_name" value="$(arg long_cam)" />
     	<!-- device identifier /dev/videoX -->
     	<arg name="video_stream_provider" value="1" />
     	<!-- camera fps -->

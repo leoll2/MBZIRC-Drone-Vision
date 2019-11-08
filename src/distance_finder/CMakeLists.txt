@@ -50,6 +50,7 @@ add_message_files(
     ObjectBox.msg
     ObjectBoxes.msg
     TargetPos.msg
+    TargetPosVec.msg
 )
 
 ## Generate services in the 'srv' folder

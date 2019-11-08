@@ -5,14 +5,24 @@
     <!-- Console launch prefix -->
     <arg name="launch_prefix" default=""/>
 
+    <!-- Actual camera setup -->
+    <arg name="short_cam" />
+    <arg name="long_cam" />
+
     <!-- ROS configuration -->
     <arg name="ros_param_file" default="$(find mbzirc_detector)/config/ros.yaml"/>
+
+    <!-- Camera peripherals configuration -->
+    <arg name="cam_param_file" default="$(find mbzirc_detector)/config/cameras.yaml"/>
 
     <!-- Color detector configuration -->
     <arg name="color_det_param_file" default="$(find mbzirc_detector)/config/color_detector.yaml"/>
 
     <!-- Load parameters -->
+    <param name="short_cam_name" type="str" value="$(arg short_cam)" />
+    <param name="long_cam_name" type="str" value="$(arg long_cam)" />
     <rosparam command="load" ns="mbzirc_detector" file="$(arg ros_param_file)"/>
+    <rosparam command="load" ns="mbzirc_detector" file="$(arg cam_param_file)"/>
     <rosparam command="load" ns="mbzirc_detector" file="$(arg color_det_param_file)"/>
 
     <!-- Start high-level detector -->

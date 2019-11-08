@@ -1,11 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <launch>
+
+    <!-- Choose here the default camera configuration -->
+    <arg name="short_cam" default="runcam2" />
+    <arg name="long_cam" default="mobius" />
+
+
     <!-- Camera inputs -->
-    <include file="$(find mbzirc_detection_launcher)/start_cameras.launch" />
+    <include file="$(find mbzirc_detection_launcher)/start_cameras.launch" >
+        <arg name="short_cam" value="$(arg short_cam)" />
+        <arg name="long_cam" value="$(arg long_cam)" />
+    </include>
 
     <!-- Camera multiplexer -->
-    <node pkg="topic_tools" type="mux" name="mux_cam" args="mux_cam/image_raw mobius_cam/image_raw ausdom_cam/image_raw mux:=mux_cam">
+    <node pkg="topic_tools" type="mux" name="mux_cam" args="mux_cam/image_raw $(arg long_cam)/image_raw $(arg short_cam)/image_raw mux:=mux_cam">
     </node>
 
     <!-- Distance finder -->
@@ -18,7 +27,10 @@
     <include file="$(find darknet_ros)/launch/darknet.launch" />
 
     <!-- High-level detector -->
-    <include file="$(find mbzirc_detector)/launch/detector.launch" />
+    <include file="$(find mbzirc_detector)/launch/detector.launch" >
+        <arg name="short_cam" value="$(arg short_cam)" />
+        <arg name="long_cam" value="$(arg long_cam)" />
+    </include>
 
     <!-- Display (for monitor/debugging) -->
     <include file="$(find mbzirc_detection_launcher)/start_display.launch" />

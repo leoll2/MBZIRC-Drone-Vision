@@ -1,0 +1,40 @@
+# MBZIRC detector: ROS configuration of supported cameras
+
+cameras:
+
+    #################################################
+    # Select what camera to use for short-range and #
+    # long-range detection                          #
+    #################################################
+
+#    long_dist: 
+#        name: mobius
+#
+#    short_dist: 
+#        name: runcam2
+
+
+    ###############################################
+    # Camera-specific configuration               #
+    # Change only to add support for a new camera #
+    ###############################################
+
+    ausdom:
+        fullname: Ausdom_Webcam
+        topic: /ausdom_cam/image_raw
+        stereo: false
+
+    mobius:
+        fullname: Mobius_ActionCam
+        topic: /mobius_cam/image_raw
+        stereo: false
+
+    runcam2:
+        fullname: RunCam2_ActionCam
+        topic: /runcam2_cam/image_raw
+        stereo: false
+
+    zed:
+        fullname: Zed_StereoCam
+        topic: /zed_cam/image_raw
+        stereo: true

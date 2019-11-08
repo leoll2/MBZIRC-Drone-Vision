@@ -17,12 +17,12 @@ void MbzircDetector::readParameters()
     nh_.getParam("publishers/detection_image/queue_size", det_img_q_size);
     nh_.getParam("publishers/detection_image/latch", det_img_latch);
 
-    nh_.getParam("cameras/long_dist/name", long_camera_name);
-    nh_.getParam("cameras/long_dist/topic", long_camera_topic);
-    nh_.getParam("cameras/long_dist/stereo", long_camera_stereo);
-    nh_.getParam("cameras/short_dist/name", short_camera_name);
-    nh_.getParam("cameras/short_dist/topic", short_camera_topic);
-    nh_.getParam("cameras/short_dist/stereo", short_camera_stereo);
+    nh_.getParam("long_cam_name", long_camera_name);
+    nh_.getParam("cameras/" + long_camera_name + "/topic", long_camera_topic);
+    nh_.getParam("cameras/" + long_camera_name + "/stereo", long_camera_stereo);
+    nh_.getParam("short_cam_name", short_camera_name);
+    nh_.getParam("cameras/" + short_camera_name + "/topic", short_camera_topic);
+    nh_.getParam("cameras/" + short_camera_name + "/stereo", short_camera_stereo);
 }
 
 
@@ -249,7 +249,6 @@ std::vector<BBox> MbzircDetector::detect(const sensor_msgs::ImageConstPtr& msg_i
 void MbzircDetector::cameraCallback(const sensor_msgs::ImageConstPtr& msg)
 {
     std::vector<BBox> bboxes;
-    // darknet_ros_msgs::BoundingBoxes ros_bboxes; TODO old code
     distance_finder::ObjectBoxes ros_bboxes;
 
     ROS_INFO("Detector received a new input frame");
@@ -270,15 +269,6 @@ void MbzircDetector::cameraCallback(const sensor_msgs::ImageConstPtr& msg)
     // Publish result (if non empty)
     if (bboxes_topic_enable && !bboxes.empty()) {
         for (const auto &b : bboxes) {
-            /* TODO old code
-            darknet_ros_msgs::BoundingBox ros_bbox;
-            ros_bbox.Class = b.obj_class;
-            ros_bbox.prob = b.prob;
-            ros_bbox.x = b.x;
-            ros_bbox.y = b.y;
-            ros_bbox.w = b.w;
-            ros_bbox.h = b.h;
-            */
             distance_finder::ObjectBox ros_bbox;
             ros_bbox.obj_class = b.obj_class;
             ros_bbox.x = b.x + (b.w/2);
@@ -287,6 +277,8 @@ void MbzircDetector::cameraCallback(const sensor_msgs::ImageConstPtr& msg)
             ros_bbox.h = b.h;
             ros_bboxes.obj_boxes.push_back(ros_bbox);
         }
+        ros_bboxes.header = msg->header;
+        ros_bboxes.cam_name = "mobius"; // TODO this should not be hardcoded
         bboxes_pub_.publish(ros_bboxes);
     }
     if (det_img_topic_enable) {
@@ -303,8 +295,11 @@ void MbzircDetector::cameraCallback(const sensor_msgs::ImageConstPtr& msg)
                 cv::Scalar(100, 200, 0), 2
             );
         }
-        sensor_msgs::ImagePtr det_img_msg = cv_bridge::CvImage(std_msgs::Header(), 
-            "bgr8", det_img_ptr->image).toImageMsg();
+        sensor_msgs::ImagePtr det_img_msg = cv_bridge::CvImage(
+            msg->header, 
+            "bgr8", 
+            det_img_ptr->image
+        ).toImageMsg();
         det_img_pub_.publish(det_img_msg);
     }
 }

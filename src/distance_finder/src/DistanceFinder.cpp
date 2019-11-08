@@ -142,7 +142,7 @@ DistanceFinder::DistanceFinder(ros::NodeHandle nh)
     initDistanceActionServer();
 
     // Publish position
-    target_pos_pub_ = nh_.advertise<distance_finder::TargetPos>(
+    target_pos_pub_ = nh_.advertise<distance_finder::TargetPosVec>(
         target_pos_topic, target_pos_q_size, target_pos_latch
     );
 
@@ -160,10 +160,34 @@ DistanceFinder::~DistanceFinder() {}
 
 
 /* Callback for new bounding box received */
-void DistanceFinder::bboxesCallback(const distance_finder::ObjectBoxes::ConstPtr& msg)
+void DistanceFinder::bboxesCallback(const distance_finder::ObjectBoxes::ConstPtr& obj_boxes_ptr)
 {
     ROS_INFO("Inside bboxesCallback");    // TODO DEBUG only
-    //TODO
+    distance_finder::TargetPosVec tpos_vec;
+    std::string cam_name;
+    
+    // Extract the camera name (and make sure it exists)
+    cam_name = obj_boxes_ptr->cam_name;
+    if (cam_params.find(cam_name) == cam_params.end())
+        ROS_ERROR("Can't estimate distance from an unknown camera image (%s)", cam_name.c_str());
+    // Extract and reuse the header (to have the same timestamp)
+    tpos_vec.header = obj_boxes_ptr->header;
+
+    for (const auto &obj : obj_boxes_ptr->obj_boxes) {
+        distance_finder::PosError poserr;
+        distance_finder::TargetPos tpos;
+        // Compute the distance and position errors
+        poserr = findPosErrorByProportion(cam_name, obj.x, obj.y, obj.w, obj.h);
+        tpos.obj_class = obj.obj_class;
+        tpos.dist = poserr.dist_m;
+        tpos.err_x_m = poserr.x_m;
+        tpos.err_y_m = poserr.y_m;
+        tpos_vec.targets_pos.push_back(tpos);
+        ROS_INFO("Distance: %f  err_x_m=%f  err_y_m=%f", tpos.dist, tpos.err_x_m, tpos.err_y_m);
+    }
+
+    // Publish the result
+    target_pos_pub_.publish(tpos_vec);
 }
 
 } /* end of distance_finder namespace */

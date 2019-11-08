@@ -1,4 +1,4 @@
-## MBZIRC detector configuration of ROS parameters
+## MBZIRC detector: configuration of ROS parameters
 
 subscribers:
 
@@ -26,22 +26,4 @@ publishers:
         topic: /mbzirc_detector/detection_image
         queue_size: 1
         latch: true
-
-
-cameras:
-
-    long_dist:
-        name: Mobius_ActionCam
-        topic: /mobius_cam/image_raw
-        stereo: false
-
-    short_dist:
-        name: Ausdom_Webcam
-        topic: /ausdom_cam/image_raw
-        stereo: false
-
-## Use these when stereocamera support is available
-#       name: Zed_StereoCam
-#       topic: /zed_cam/image_raw
-#       stereo: true
 

@@ -11,6 +11,7 @@
 #include <distance_finder/ObjectBox.h>
 #include <distance_finder/ObjectBoxes.h>
 #include <distance_finder/TargetPos.h>
+#include <distance_finder/TargetPosVec.h>
 #include <distance_finder/GetDistanceAction.h>
 
 namespace distance_finder {
@@ -72,7 +73,7 @@ class DistanceFinder
 public:
     DistanceFinder(ros::NodeHandle nh);
     ~DistanceFinder();
-    void bboxesCallback(const distance_finder::ObjectBoxes::ConstPtr& msg);
+    void bboxesCallback(const distance_finder::ObjectBoxes::ConstPtr& obj_boxes_ptr);
 };
 
 }
