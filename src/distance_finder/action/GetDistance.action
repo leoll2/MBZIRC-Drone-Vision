@@ -1,4 +1,5 @@
 # Goal
+Header header
 string cam_name
 bool use_dmap
 uint32 x

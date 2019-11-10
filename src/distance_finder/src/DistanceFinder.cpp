@@ -66,6 +66,7 @@ void DistanceFinder::getDistanceActionGoalCallback(const distance_finder::GetDis
 {
     distance_finder::GetDistanceResult dist_act_res;
 
+    std_msgs::Header header = dist_act_ptr->header;
     std::string cam_name = dist_act_ptr->cam_name;
     bool use_dmap = dist_act_ptr->use_dmap;
     uint32_t obj_x = dist_act_ptr->x;
@@ -74,7 +75,7 @@ void DistanceFinder::getDistanceActionGoalCallback(const distance_finder::GetDis
     uint32_t obj_h = dist_act_ptr->h;
 
     // Compute distance and error
-    PosError pe = findPosErrorByProportion(cam_name, obj_x, obj_y, obj_w, obj_h);
+    PosError pe = findPosError(cam_name, obj_x, obj_y, obj_w, obj_h, header);
 
     // Produce action response
     dist_act_res.dist = pe.dist_m;
@@ -93,43 +94,107 @@ void DistanceFinder::getDistanceActionPreemptCallback()
 
 
 /* Compute the distance from the object by the means of a simple proportion */
-double DistanceFinder::findDistanceByProportion(std::string cam_name, 
+double DistanceFinder::findDistanceByProportion(const CameraParameters& cp, 
     uint32_t x, uint32_t y, uint32_t w, uint32_t h)
 {
-    CameraParameters &cp = cam_params[cam_name];
-
     // Observed flying ball radius in pixel
     double fly_ball_radius_pix = (w + h)/2;
     // flying ball radius in pixel at calibration distance
-    // TODO is the number 800 correct? where is it from?
-    double calib_fly_ball_radius_pix = 800.0 / cp.calib_fov_width * fly_ball_params.radius;
+    double calib_fly_ball_radius_pix = cp.resolution_width / cp.calib_fov_width * fly_ball_params.radius;
 
     return cp.calib_dist * calib_fly_ball_radius_pix / fly_ball_radius_pix;
 }
 
 
-/* Compute the position error of the object (w.r.t. to the current viewpoint)
- * by the means of a simple proportion */
-PosError DistanceFinder::findPosErrorByProportion(std::string cam_name, 
-    uint32_t x, uint32_t y, uint32_t w, uint32_t h)
+/* Compute the distance from the object by the means of a stereocamera depth map.
+ * Returns a negative number if cannot extract info from the dmap for some reason */
+double DistanceFinder::findDistanceByDepthMap(const CameraParameters& cp, 
+    uint32_t x, uint32_t y, uint32_t w, uint32_t h, ros::Time ts)
 {
-    CameraParameters &cp = cam_params[cam_name];
+    // this ugly trick is needed because getElementAfterTime is not inclusive
+    ros::Duration one_nanosecond(0, 1);
+    ros::Time search_timestamp = ts - one_nanosecond;
+
+    sensor_msgs::ImageConstPtr dmap_ptr = dmap_cache_.getElemAfterTime(search_timestamp);
+    if ((dmap_ptr->header.stamp.sec != ts.sec) || (dmap_ptr->header.stamp.nsec != ts.nsec)) {
+        ROS_WARN("Could not match the depth map timestamp with the raw image one");
+        return -1.0;
+    }
+    cv_bridge::CvImageConstPtr cv_dmap = cv_bridge::toCvCopy(dmap_ptr, sensor_msgs::image_encodings::TYPE_32FC1);
+
+    // Given the bounding box, read the depth from 9 internal points. 
+    // Sort them, then take the second minimum.
+    // This is possibly better than taking the minimum as it may be a spurious outlier
+    std::vector<float> depths;
+    int x_ref, y_ref;
+    float d_ref;
+    int refs_half = 1;   // n_refs = (2*refs_half + 1)^2  TODO make this configurable
+   
+    for (int i=-refs_half; i <= refs_half; ++i) {
+        for (int j=-refs_half; j <= refs_half; ++j) {
+            x_ref = int(x + j*(int)w/2/(refs_half+1));
+            y_ref = int(y + i*(int)h/2/(refs_half+1));
+            if ((x_ref >= 0) && (x_ref < cp.resolution_width) && 
+                (y_ref >= 0) && (y_ref < cp.resolution_height)) 
+            {
+                d_ref = cv_dmap->image.at<float>(y_ref, x_ref);
+                if (std::isnormal(d_ref))
+                    depths.push_back(d_ref);
+            } else {
+                ROS_WARN("Attempted out-of-index dmap access at (%d,%d)", x_ref, y_ref);
+            }
+        }
+    }
+
+    std::sort(depths.begin(), depths.end());
+
+    if (depths.size() > 1) {
+        return depths[1];
+    } else if (depths.size() == 1) {
+        return depths[0];
+    } else
+        return -1.0;
+}
+
+
+/* Compute the position error of the object (w.r.t. to the current viewpoint).
+ * The distance is computed by the means of a depth map (when available) or 
+ * a simple geometrical proportion. */
+PosError DistanceFinder::findPosError(std::string cam_name, 
+    uint32_t x, uint32_t y, uint32_t w, uint32_t h, std_msgs::Header header)
+{
     PosError pe;
+    double dist;
 
-    double dist = findDistanceByProportion(cam_name, x, y, w, h);
-    pe.dist_m = dist;
-    pe.x_pix = x - (cp.resolution_width/2);
-    pe.y_pix = y - (cp.resolution_height/2);
-    pe.x_m = pe.x_pix * ((cp.calib_fov_width * dist / cp.calib_dist) / (double)cp.resolution_width);
-    pe.y_m = pe.y_pix * ((cp.calib_fov_height * dist / cp.calib_dist) / (double)cp.resolution_height);
+    try {
+        const CameraParameters &cp = cam_params.at(cam_name);
 
+        if (cp.stereo) {
+            dist = findDistanceByDepthMap(cp, x, y, w, h, header.stamp);
+            // Fallback to proportional alg if dmap was unreadable
+            if (dist < 0)
+                dist = findDistanceByProportion(cp, x, y, w, h);
+        } else {
+            dist = findDistanceByProportion(cp, x, y, w, h);
+        }
+    
+        pe.dist_m = dist;
+        pe.x_pix = signed(x - (cp.resolution_width/2));
+        pe.y_pix = signed(y - int(cp.resolution_height/2));
+        pe.x_m = pe.x_pix * ((cp.calib_fov_width * dist / cp.calib_dist) / (double)cp.resolution_width);
+        pe.y_m = pe.y_pix * ((cp.calib_fov_height * dist / cp.calib_dist) / (double)cp.resolution_height);
+    } catch (const std::out_of_range& e) {
+        ROS_ERROR("Could not find camera parameters; is %s present in the configuration file?", cam_name.c_str());
+    }
     return pe;
 }
 
 
 /* Constructor */
-DistanceFinder::DistanceFinder(ros::NodeHandle nh)
+DistanceFinder::DistanceFinder(ros::NodeHandle nh)  // TODO reduce cache size to minimum
   : nh_(nh),
+    dmap_sub_(nh_, "/distance_finder/depth_map", 1),
+    dmap_cache_(dmap_sub_, 20),
     dist_act_srv_(nh_, "get_distance",
         boost::bind(&DistanceFinder::getDistanceActionGoalCallback,
             this, _1
@@ -162,7 +227,6 @@ DistanceFinder::~DistanceFinder() {}
 /* Callback for new bounding box received */
 void DistanceFinder::bboxesCallback(const distance_finder::ObjectBoxes::ConstPtr& obj_boxes_ptr)
 {
-    ROS_INFO("Inside bboxesCallback");    // TODO DEBUG only
     distance_finder::TargetPosVec tpos_vec;
     std::string cam_name;
     
@@ -177,7 +241,7 @@ void DistanceFinder::bboxesCallback(const distance_finder::ObjectBoxes::ConstPtr
         distance_finder::PosError poserr;
         distance_finder::TargetPos tpos;
         // Compute the distance and position errors
-        poserr = findPosErrorByProportion(cam_name, obj.x, obj.y, obj.w, obj.h);
+        poserr = findPosError(cam_name, obj.x, obj.y, obj.w, obj.h, tpos_vec.header);
         tpos.obj_class = obj.obj_class;
         tpos.dist = poserr.dist_m;
         tpos.err_x_m = poserr.x_m;

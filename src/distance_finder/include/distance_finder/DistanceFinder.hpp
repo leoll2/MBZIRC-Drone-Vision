@@ -5,6 +5,8 @@
 
 #include <ros/ros.h>
 #include <cv_bridge/cv_bridge.h>
+#include <message_filters/subscriber.h>
+#include <message_filters/cache.h>
 
 #include <actionlib/server/simple_action_server.h>
 
@@ -15,6 +17,8 @@
 #include <distance_finder/GetDistanceAction.h>
 
 namespace distance_finder {
+
+enum DistanceAlgorithm {PROPORTION, DEPTH_MAP};
 
 
 typedef struct TargetParameters {
@@ -38,8 +42,8 @@ typedef struct CameraParameters {
 
 
 typedef struct PosError {
-    uint32_t x_pix;
-    uint32_t y_pix;
+    int x_pix;
+    int y_pix;
     double x_m;
     double y_m;
     double dist_m;
@@ -51,6 +55,8 @@ class DistanceFinder
     ros::NodeHandle nh_;
     ros::Subscriber bbox_sub_;
     ros::Publisher target_pos_pub_;
+    message_filters::Subscriber<sensor_msgs::Image> dmap_sub_;
+    message_filters::Cache<sensor_msgs::Image> dmap_cache_;
     actionlib::SimpleActionServer<distance_finder::GetDistanceAction> dist_act_srv_;
     std::map<std::string, CameraParameters> cam_params;
     TargetParameters fly_ball_params;
@@ -66,8 +72,9 @@ class DistanceFinder
     void initDistanceActionServer();
     void getDistanceActionGoalCallback(const distance_finder::GetDistanceGoalConstPtr &dist_act_ptr);
     void getDistanceActionPreemptCallback();
-    double findDistanceByProportion(std::string cam_name, uint32_t x, uint32_t y, uint32_t w, uint32_t h);
-    PosError findPosErrorByProportion(std::string cam_name, uint32_t x, uint32_t y, uint32_t w, uint32_t h);
+    double findDistanceByProportion(const CameraParameters& cp, uint32_t x, uint32_t y, uint32_t w, uint32_t h);
+    double findDistanceByDepthMap(const CameraParameters& cp, uint32_t x, uint32_t y, uint32_t w, uint32_t h, ros::Time timestamp);
+    PosError findPosError(std::string cam_name, uint32_t x, uint32_t y, uint32_t w, uint32_t h, std_msgs::Header header);
 
 
 public:

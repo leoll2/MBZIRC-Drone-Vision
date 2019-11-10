@@ -59,6 +59,9 @@ void MbzircDetector::switchCamera(CameraType new_cam_range)
 {
     topic_tools::MuxSelect srv;
 
+    if (new_cam_range == current_cam_range)
+        return;
+
     switch (new_cam_range) {
         case SHORT_RANGE:
             srv.request.topic = short_camera_topic;
@@ -69,6 +72,8 @@ void MbzircDetector::switchCamera(CameraType new_cam_range)
         default:
             ROS_ERROR("Attempting to switch to an unsupported camera mode");
     }
+
+    current_cam_range = new_cam_range;
 
     if (cam_sel_client.call(srv)) {
         ROS_DEBUG("Switched camera from %s to %s", 
@@ -106,7 +111,7 @@ MbzircDetector::MbzircDetector(ros::NodeHandle nh)
     initColorDetector();
     ROS_INFO("Successfully initialized color detector");
 
-    // Publish bounding boxes and detection image
+    // Setup publisher for bounding boxes and detection image
     if (bboxes_topic_enable) {
         bboxes_pub_ = nh_.advertise<distance_finder::ObjectBoxes>( 
             bboxes_topic, bboxes_q_size, bboxes_latch
@@ -118,10 +123,14 @@ MbzircDetector::MbzircDetector(ros::NodeHandle nh)
         );
     }
 
+    // Select the correct camera source
+    switchCamera(current_cam_range);
+
     // Subscribe to camera input
     image_sub_ = it_.subscribe(input_camera_topic, 1, 
         &MbzircDetector::cameraCallback, this
     );
+
     ROS_INFO("Successfully subscribed to input camera topic");
 }
 
@@ -258,10 +267,8 @@ void MbzircDetector::cameraCallback(const sensor_msgs::ImageConstPtr& msg)
     std::vector<BBox> bboxes;
     distance_finder::ObjectBoxes ros_bboxes;
 
-    ROS_INFO("Detector received a new input frame");
-    // Change camera
-    // switchCamera(short_camera_topic);
-    
+    ROS_DEBUG("Detector received a new frame");
+ 
     // Yolo detector
     bboxes = detect(msg);
 
@@ -310,5 +317,8 @@ void MbzircDetector::cameraCallback(const sensor_msgs::ImageConstPtr& msg)
         ).toImageMsg();
         det_img_pub_.publish(det_img_msg);
     }
+
+    // TODO must implement a policy for this
+    switchCamera(SHORT_RANGE);
 }
 

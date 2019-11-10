@@ -8,7 +8,7 @@
     <arg name="long_cam" default="mobius" />
 
     <!-- Short-range camera -->
-    <include file="$(find video_stream_opencv)/launch/camera.launch">
+    <include file="$(find video_stream_opencv)/launch/camera.launch" unless="$(eval arg('short_cam') == 'zed')">
     	<arg name="camera_name" value="$(arg short_cam)" />
     	<!-- device identifier /dev/videoX -->
     	<arg name="video_stream_provider" value="0" />
@@ -23,7 +23,7 @@
     </include>
 
     <!-- Long-range camera -->
-    <include file="$(find video_stream_opencv)/launch/camera.launch">
+    <include file="$(find video_stream_opencv)/launch/camera.launch" unless="$(eval arg('long_cam') == 'zed')">
     	<arg name="camera_name" value="$(arg long_cam)" />
     	<!-- device identifier /dev/videoX -->
     	<arg name="video_stream_provider" value="1" />
@@ -36,5 +36,17 @@
 	    <arg name="height" value="480"/>
 	    <arg name="visualize" value="false"/>
     </include>
+
+    <!-- Zed camera -->
+    <group>
+        <remap from="/zed/zed_node/left/image_rect_color" to="/zed/image_raw" />
+        <remap from="/zed/zed_node/depth/depth_registered" to="/zed/depth_map" />
+        <include file="$(find zed_wrapper)/launch/zed.launch" if="$(eval arg('short_cam') == 'zed')">
+            <arg name="node_name" value="zed_node" />
+        </include>
+        <include file="$(find zed_wrapper)/launch/zed.launch" if="$(eval arg('long_cam') == 'zed')">
+            <arg name="node_name" value="zed_node" />
+        </include>
+    </group>
 
 </launch>

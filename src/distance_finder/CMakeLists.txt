@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   sensor_msgs
   std_msgs
+  message_filters
   actionlib
   actionlib_msgs
   message_generation
@@ -113,6 +114,7 @@ catkin_package(
     roscpp 
     sensor_msgs 
     std_msgs
+    message_filters
     message_runtime
   #DEPENDS system_lib
 )
