@@ -3,7 +3,7 @@
 	url = https://github.com/stereolabs/zed-ros-wrapper
 [submodule "src/video_stream_opencv"]
 	path = src/video_stream_opencv
-	url = https://github.com/ros-drivers/video_stream_opencv
+	url = https://github.com/leoll2/video_stream_opencv
 [submodule "src/darknet_ros/darknet"]
 	path = src/darknet_ros/darknet
 	url = https://www.github.com/alexeyab/darknet
