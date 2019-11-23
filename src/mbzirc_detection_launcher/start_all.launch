@@ -6,6 +6,11 @@
     <arg name="short_cam" default="zed" />
     <arg name="long_cam" default="mobius" />
 
+    <!-- Choose here the streaming configuration -->
+    <arg name="stream_port" default="8080" />
+    <arg name="stream_addr" default="0.0.0.0" />
+    <arg name="stream_type" default="h264" />
+
 
     <!-- Camera inputs -->
     <include file="$(find mbzirc_detection_launcher)/start_cameras.launch" >
@@ -35,5 +40,12 @@
 
     <!-- Display (for monitor/debugging) -->
     <include file="$(find mbzirc_detection_launcher)/start_display.launch" />
+
+    <!-- High-level detector -->
+    <include file="$(find mbzirc_detection_launcher)/start_streaming.launch" >
+        <arg name="port" value="$(arg stream_port)" />
+        <arg name="address" value="$(arg stream_addr)" />
+        <arg name="type" value="$(arg stream_type)" />
+    </include>
 
 </launch>

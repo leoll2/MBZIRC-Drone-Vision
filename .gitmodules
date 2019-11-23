@@ -7,3 +7,6 @@
 [submodule "src/darknet_ros/darknet"]
 	path = src/darknet_ros/darknet
 	url = https://www.github.com/alexeyab/darknet
+[submodule "src/web_video_server"]
+	path = src/web_video_server
+	url = https://github.com/leoll2/web_video_server
