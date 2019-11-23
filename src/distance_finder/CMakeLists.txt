@@ -9,9 +9,11 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   image_transport
   roscpp
+  geometry_msgs
   sensor_msgs
   std_msgs
   message_filters
+  tf2
   actionlib
   actionlib_msgs
   message_generation
@@ -111,9 +113,11 @@ catkin_package(
   CATKIN_DEPENDS
     cv_bridge 
     image_transport 
-    roscpp 
-    sensor_msgs 
+    roscpp
+    geometry_msgs
+    sensor_msgs
     std_msgs
+    tf2
     message_filters
     message_runtime
   #DEPENDS system_lib

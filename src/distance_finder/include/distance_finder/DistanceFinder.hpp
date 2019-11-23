@@ -5,8 +5,11 @@
 
 #include <ros/ros.h>
 #include <cv_bridge/cv_bridge.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <message_filters/subscriber.h>
 #include <message_filters/cache.h>
+#include "tf2/LinearMath/Quaternion.h"
+#include "tf2/LinearMath/Matrix3x3.h"
 
 #include <actionlib/server/simple_action_server.h>
 
@@ -41,6 +44,13 @@ typedef struct CameraParameters {
 } CameraParameters;
 
 
+typedef struct RPY {
+    double roll;
+    double pitch;
+    double yaw;
+} RPY;
+
+
 typedef struct PosError {
     int x_pix;
     int y_pix;
@@ -56,7 +66,9 @@ class DistanceFinder
     ros::Subscriber bbox_sub_;
     ros::Publisher target_pos_pub_;
     message_filters::Subscriber<sensor_msgs::Image> dmap_sub_;
+    message_filters::Subscriber<geometry_msgs::PoseStamped> pose_sub_;
     message_filters::Cache<sensor_msgs::Image> dmap_cache_;
+    message_filters::Cache<geometry_msgs::PoseStamped> pose_cache_;
     actionlib::SimpleActionServer<distance_finder::GetDistanceAction> dist_act_srv_;
     std::map<std::string, CameraParameters> cam_params;
     TargetParameters fly_ball_params;
@@ -72,6 +84,7 @@ class DistanceFinder
     void initDistanceActionServer();
     void getDistanceActionGoalCallback(const distance_finder::GetDistanceGoalConstPtr &dist_act_ptr);
     void getDistanceActionPreemptCallback();
+    RPY findOrientation(ros::Time timestamp);
     double findDistanceByProportion(const CameraParameters& cp, uint32_t x, uint32_t y, uint32_t w, uint32_t h);
     double findDistanceByDepthMap(const CameraParameters& cp, uint32_t x, uint32_t y, uint32_t w, uint32_t h, ros::Time timestamp);
     PosError findPosError(std::string cam_name, uint32_t x, uint32_t y, uint32_t w, uint32_t h, std_msgs::Header header);

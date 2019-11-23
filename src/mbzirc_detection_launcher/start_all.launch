@@ -25,6 +25,7 @@
     <!-- Distance finder -->
     <group>
         <remap from="/distance_finder/depth_map" to="$(arg short_cam)/depth_map" />
+        <remap from="/distance_finder/pose" to="$(arg short_cam)/pose" />
         <remap from="/distance_finder/bounding_boxes" to="/mbzirc_detector/bounding_boxes" />
         <include file="$(find distance_finder)/launch/distance_finder.launch" />
     </group>

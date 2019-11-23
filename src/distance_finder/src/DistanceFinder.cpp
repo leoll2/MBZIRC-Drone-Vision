@@ -1,6 +1,8 @@
 #include "ros/console.h"
 #include "distance_finder/DistanceFinder.hpp"
 
+#define RAD2DEG 57.29578
+
 namespace distance_finder {
 
 /* Read the ROS configuration from file */
@@ -157,17 +159,59 @@ double DistanceFinder::findDistanceByDepthMap(const CameraParameters& cp,
 }
 
 
+/* Retrieve the camera orientation (if any camera features an IMU).
+ * Return (0,0,0) if  */
+RPY DistanceFinder::findOrientation(ros::Time ts)
+{
+    RPY orient = {0, 0, 0};
+
+    // this ugly trick is needed because getElementAfterTime is not inclusive
+    ros::Duration one_nanosecond(0, 1);
+    ros::Time search_timestamp = ts - one_nanosecond;
+
+    geometry_msgs::PoseStampedConstPtr pose_ptr = pose_cache_.getElemAfterTime(search_timestamp);
+    if ((pose_ptr->header.stamp.sec != ts.sec) || (pose_ptr->header.stamp.nsec != ts.nsec)) {
+        // TODO fix next lines
+        // Note: standard cameras will almost always trigger this warning, as the pose is provided by another device
+        ROS_WARN("Could not match the pose timestamp with the raw image one");
+    } else {
+        double tx = pose_ptr->pose.position.x;
+        double ty = pose_ptr->pose.position.y;
+        double tz = pose_ptr->pose.position.z;
+
+        // orientation quaternion
+        tf2::Quaternion q(
+            pose_ptr->pose.orientation.x,
+            pose_ptr->pose.orientation.y,
+            pose_ptr->pose.orientation.z,
+            pose_ptr->pose.orientation.w
+        );
+
+        // rotation matrix
+        tf2::Matrix3x3 m(q);
+
+        m.getRPY(orient.roll, orient.pitch, orient.yaw);
+    }
+
+    return orient;
+}
+
+
 /* Compute the position error of the object (w.r.t. to the current viewpoint).
  * The distance is computed by the means of a depth map (when available) or 
  * a simple geometrical proportion. */
 PosError DistanceFinder::findPosError(std::string cam_name, 
     uint32_t x, uint32_t y, uint32_t w, uint32_t h, std_msgs::Header header)
 {
+    tf2::Quaternion q_corr;
+    RPY orient;
     PosError pe;
     double dist;
+    double x_m_raw, y_m_raw, z_m_raw;
 
     try {
         const CameraParameters &cp = cam_params.at(cam_name);
+        orient = findOrientation(header.stamp);
 
         if (cp.stereo) {
             dist = findDistanceByDepthMap(cp, x, y, w, h, header.stamp);
@@ -179,10 +223,25 @@ PosError DistanceFinder::findPosError(std::string cam_name,
         }
     
         pe.dist_m = dist;
+        // position error in pixel (w/o orientation correction)
         pe.x_pix = signed(x - (cp.resolution_width/2));
         pe.y_pix = signed(y - int(cp.resolution_height/2));
-        pe.x_m = pe.x_pix * ((cp.calib_fov_width * dist / cp.calib_dist) / (double)cp.resolution_width);
-        pe.y_m = pe.y_pix * ((cp.calib_fov_height * dist / cp.calib_dist) / (double)cp.resolution_height);
+        // position error in metres (w/o orientation adjustment)
+        x_m_raw = pe.x_pix * ((cp.calib_fov_width * dist / cp.calib_dist) / (double)cp.resolution_width);
+        y_m_raw = pe.y_pix * ((cp.calib_fov_height * dist / cp.calib_dist) / (double)cp.resolution_height);
+        z_m_raw = sqrt(dist*dist - x_m_raw*x_m_raw - y_m_raw*y_m_raw);
+        // position error in metres (with roll/pitch adjustment)
+        // Note that our (x,y,z) coordinates actually map to (y,z,x), since x is the roll axis, y the pitch, z the yaw
+        tf2::Vector3 err_m_raw(z_m_raw, x_m_raw, y_m_raw);
+        q_corr.setRPY(orient.roll, orient.pitch, 0); // (orient.roll, orient.pitch, 0);
+        q_corr.normalize();
+        tf2::Vector3 err_m_corr = tf2::quatRotate(q_corr, err_m_raw);
+        pe.x_m = err_m_corr.y();
+        pe.y_m = err_m_corr.z();
+
+        ROS_DEBUG("Roll: %.2f  Pitch:%.2f  Yaw:%.2f", orient.roll*RAD2DEG, orient.pitch*RAD2DEG, orient.yaw*RAD2DEG);
+        //ROS_DEBUG("x_m_raw =%f  y_m_raw =%f  z_m_raw =%f", x_m_raw, y_m_raw, z_m_raw);
+        //ROS_DEBUG("x_m_corr=%f  y_m_corr=%f  z_m_corr=%f", pe.x_m, pe.y_m, err_m_corr.x());
     } catch (const std::out_of_range& e) {
         ROS_ERROR("Could not find camera parameters; is %s present in the configuration file?", cam_name.c_str());
     }
@@ -194,7 +253,9 @@ PosError DistanceFinder::findPosError(std::string cam_name,
 DistanceFinder::DistanceFinder(ros::NodeHandle nh)  // TODO reduce cache size to minimum
   : nh_(nh),
     dmap_sub_(nh_, "/distance_finder/depth_map", 1),
+    pose_sub_(nh_, "/distance_finder/pose", 1),
     dmap_cache_(dmap_sub_, 20),
+    pose_cache_(pose_sub_, 20),
     dist_act_srv_(nh_, "get_distance",
         boost::bind(&DistanceFinder::getDistanceActionGoalCallback,
             this, _1
@@ -247,7 +308,7 @@ void DistanceFinder::bboxesCallback(const distance_finder::ObjectBoxes::ConstPtr
         tpos.err_x_m = poserr.x_m;
         tpos.err_y_m = poserr.y_m;
         tpos_vec.targets_pos.push_back(tpos);
-        ROS_DEBUG("Distance: %f  err_x_m=%f  err_y_m=%f", tpos.dist, tpos.err_x_m, tpos.err_y_m);
+        ROS_DEBUG("distance: %.2f  err_X=%.2f  err_Y=%.2f", tpos.dist, tpos.err_x_m, tpos.err_y_m);
     }
 
     // Publish the result

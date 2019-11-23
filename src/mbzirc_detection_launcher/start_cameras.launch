@@ -41,6 +41,7 @@
     <group>
         <remap from="/zed/zed_node/left/image_rect_color" to="/zed/image_raw" />
         <remap from="/zed/zed_node/depth/depth_registered" to="/zed/depth_map" />
+        <remap from="/zed/zed_node/pose" to="/zed/pose" />
         <include file="$(find zed_wrapper)/launch/zed.launch" if="$(eval arg('short_cam') == 'zed')">
             <arg name="node_name" value="zed_node" />
         </include>
