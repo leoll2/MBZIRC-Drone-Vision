@@ -247,7 +247,7 @@ void DistanceFinder::bboxesCallback(const distance_finder::ObjectBoxes::ConstPtr
         tpos.err_x_m = poserr.x_m;
         tpos.err_y_m = poserr.y_m;
         tpos_vec.targets_pos.push_back(tpos);
-        ROS_INFO("Distance: %f  err_x_m=%f  err_y_m=%f", tpos.dist, tpos.err_x_m, tpos.err_y_m);
+        ROS_DEBUG("Distance: %f  err_x_m=%f  err_y_m=%f", tpos.dist, tpos.err_x_m, tpos.err_y_m);
     }
 
     // Publish the result

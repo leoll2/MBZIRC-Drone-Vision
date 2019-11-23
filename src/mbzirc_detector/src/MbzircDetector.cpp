@@ -269,13 +269,13 @@ void MbzircDetector::cameraCallback(const sensor_msgs::ImageConstPtr& msg)
 
     ROS_DEBUG("Detector received a new frame");
  
-    // Yolo detector
+    // Find bounding boxes
     bboxes = detect(msg);
 
     // List bboxes (debug)
-    ROS_INFO("Detected %d objects:", (int)bboxes.size());
+    ROS_DEBUG("Detected %d objects:", (int)bboxes.size());
     for (const auto &b : bboxes) {
-        ROS_INFO("\t %s at [(%d,%d),(%d,%d)] with prob %f",
+        ROS_DEBUG("\t %s at [(%d,%d),(%d,%d)] with prob %f",
             b.obj_class.c_str(), b.x, b.y, b.x+b.w, b.y+b.h, b.prob    
         );
     }
@@ -296,6 +296,7 @@ void MbzircDetector::cameraCallback(const sensor_msgs::ImageConstPtr& msg)
             ? short_camera_name : long_camera_name;
         bboxes_pub_.publish(ros_bboxes);
     }
+
     if (det_img_topic_enable) {
         cv_bridge::CvImagePtr det_img_ptr;
         // Get raw image

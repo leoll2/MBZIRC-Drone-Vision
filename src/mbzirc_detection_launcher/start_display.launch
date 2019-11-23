@@ -33,13 +33,11 @@
     -->
 
     <!-- Display detection image -->
-    <!-- TODO fix because darknet_ros is not publishing anymore the detection_image
     <group>
-        <remap from="/camera/image_to_display" to="/darknet_ros/detection_image" />
+        <remap from="/camera/image_to_display" to="/mbzirc_detector/detection_image" />
         <include file="$(find imageshow)/launch/imageshow.launch">
             <arg name="shower_name" value="selected_camera" />
         </include>
     </group>
-    -->
 
 </launch>
