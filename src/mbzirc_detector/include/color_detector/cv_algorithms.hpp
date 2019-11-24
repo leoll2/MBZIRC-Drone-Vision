@@ -9,13 +9,19 @@ namespace cv_alg {
     cv::Mat pyramidFilter(const cv::Mat &src, int sp=10, int sr=30);
 
     cv::Mat bgr2hsv(const cv::Mat &src);
+    
+    cv::Mat bgr2lab(const cv::Mat &src);
 
-    cv::Mat colorFilter(const cv::Mat &src,
+    cv::Mat HSVColorFilter(const cv::Mat &src,
         const cv::Scalar *lb1, const cv::Scalar *ub1,
         const cv::Scalar *lb2=nullptr, const cv::Scalar *ub2=nullptr
     );
     
-    cv::Mat negColorFilter(const cv::Mat &src,
+    cv::Mat LabColorFilter(const cv::Mat &src,
+        const cv::Scalar *lb, const cv::Scalar *ub
+    );
+
+    cv::Mat negHSVColorFilter(const cv::Mat &src,
         const cv::Scalar *lb1, const cv::Scalar *ub1,
         const cv::Scalar *lb2=nullptr, const cv::Scalar *ub2=nullptr, 
         unsigned margin=10

@@ -121,6 +121,7 @@ endif()
 catkin_package(
   INCLUDE_DIRS 
     include
+    calib
   # LIBRARIES mbzirc_detector
   CATKIN_DEPENDS 
     cv_bridge

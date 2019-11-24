@@ -2,6 +2,15 @@
 
 color_detector:
 
+    # CIE L*a*b* thresholds
+    lab_thresh:
+        luma_min: 0
+        luma_max: 255
+        a_min: 160 
+        a_max: 255
+        b_min: 130
+        b_max: 255
+
     # HSV thresholds
     hsv_thresh:
         hue_min: 0 
@@ -15,4 +24,16 @@ color_detector:
     min_area_pix: 6
 
     # How many objects to detect at the same time
-    max_objects: 3
+    max_objects: 5
+
+    # If we are looking for a single target with the main color, this may reduce false positives
+    single_main_target: true
+
+    # Hu moments (for roundness estimation). Distance can be evaluated with L1, L2, L3 metrics.
+    # Soft distance (small objects) recommended: 0.040 for L1, 0.028 for L2, 0.036 for L3
+    # Hard distance (big objects) recommended:   0.036 for L1, 0.024 for L2, 0.030 for L3
+    hu:
+        metric: 3
+        soft_hard_area_thresh: 150
+        max_dist_soft: 0.036 
+        max_dist_hard: 0.030

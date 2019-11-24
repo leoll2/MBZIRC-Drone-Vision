@@ -17,7 +17,7 @@
 
 class MbzircDetector {
     enum CameraType {SHORT_RANGE, LONG_RANGE};
-    enum DetectType {YOLO, COLOR_AND_YOLO};
+    enum DetectType {YOLO, COLOR, COLOR_AND_YOLO};
     
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;

@@ -72,6 +72,15 @@ namespace cv_alg {
     }
 
 
+    /* Convert a frame from BGR to CIE L*a*b* */
+    cv::Mat bgr2lab(const cv::Mat &src)
+    {
+        cv::Mat dst;
+        cvtColor(src, dst, cv::COLOR_BGR2Lab);
+        return dst;
+    }
+
+
     /* Compute HSV color mask based on the specified thresholds.
      * It is possible to specify two ranges, which is especially
      * useful when thresholding around 0 (e.g. red color)
@@ -89,7 +98,7 @@ namespace cv_alg {
      *      HSV upper bound #2
      * 
      */
-    cv::Mat colorFilter(const cv::Mat &src, 
+    cv::Mat HSVColorFilter(const cv::Mat &src, 
         const cv::Scalar *lb1, const cv::Scalar *ub1, 
         const cv::Scalar *lb2, const cv::Scalar *ub2)
     {
@@ -109,12 +118,31 @@ namespace cv_alg {
     }
 
 
+    /* Compute L*a*b* color mask based on the specified thresholds.
+     *
+     * Note: the src frame is assumed to be already in L*a*b* format.
+     * Parameters
+     * ----------
+     * lb : Scalar
+     *      Lab lower bound
+     * ub : Scalar
+     *      Lab upper bound
+     */
+    cv::Mat LabColorFilter(const cv::Mat &src, 
+        const cv::Scalar *lb, const cv::Scalar *ub) 
+    {
+        cv::Mat dst;
+        cv::inRange(src, *lb, *ub, dst);
+        return dst;
+    }
+
+
     /* Compute the opposite HSV color mask of the specified thresholds.
      * It is also possible to specify a soft margin (thresholds are loosened)
      * 
      * Note: the src frame is assumed to be already in HSV format.
      */
-    cv::Mat negColorFilter(const cv::Mat &src, 
+    cv::Mat negHSVColorFilter(const cv::Mat &src, 
         const cv::Scalar *lb1, const cv::Scalar *ub1, 
         const cv::Scalar *lb2, const cv::Scalar *ub2, unsigned margin)
     {
@@ -140,9 +168,9 @@ namespace cv_alg {
             if (extub2[0] > 180) extub2[0] = 180; // prevent overflow
             if (extub2[1] > 255) extub2[1] = 255;
             if (extub2[2] > 255) extub2[2] = 255;
-            extmask = colorFilter(src, &extlb1, &extub1, &extlb2, &extub2);
+            extmask = HSVColorFilter(src, &extlb1, &extub1, &extlb2, &extub2);
         } else {
-            extmask = colorFilter(src, &extlb1, &extub1, nullptr, nullptr);
+            extmask = HSVColorFilter(src, &extlb1, &extub1, nullptr, nullptr);
         }
 
         cv::bitwise_not(extmask, dst);

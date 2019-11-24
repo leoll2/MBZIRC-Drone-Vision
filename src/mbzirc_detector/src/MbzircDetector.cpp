@@ -29,27 +29,40 @@ void MbzircDetector::readParameters()
 /* Initialize the color detector, according to its config file */
 void MbzircDetector::initColorDetector()
 {
-    int hue_min, hue_max, sat_min, sat_max, val_min, val_max;
+    bool single_main_target;
+    int luma_min, luma_max, a_min, a_max, b_min, b_max;
     int min_area_pix;
     int max_objects;
+    int hu_metric;
+    int hu_soft_hard_area_thresh;
+    double hu_max_dist_soft, hu_max_dist_hard;
 
-    nh_.getParam("color_detector/hsv_thresh/hue_min", hue_min);
-    nh_.getParam("color_detector/hsv_thresh/hue_max", hue_max);
-    nh_.getParam("color_detector/hsv_thresh/sat_min", sat_min);
-    nh_.getParam("color_detector/hsv_thresh/sat_max", sat_max);
-    nh_.getParam("color_detector/hsv_thresh/val_min", val_min);
-    nh_.getParam("color_detector/hsv_thresh/val_max", val_max);
+    nh_.getParam("color_detector/lab_thresh/luma_min", luma_min);
+    nh_.getParam("color_detector/lab_thresh/luma_max", luma_max);
+    nh_.getParam("color_detector/lab_thresh/a_min", a_min);
+    nh_.getParam("color_detector/lab_thresh/a_max", a_max);
+    nh_.getParam("color_detector/lab_thresh/b_min", b_min);
+    nh_.getParam("color_detector/lab_thresh/b_max", b_max);
 
     nh_.getParam("color_detector/min_area_pix", min_area_pix);
     nh_.getParam("color_detector/max_objects", max_objects);
+    nh_.getParam("color_detector/single_main_target", single_main_target);
 
-    std::vector<unsigned> th {(unsigned)hue_min, (unsigned)hue_max, 
-        (unsigned)sat_min, (unsigned)sat_max, (unsigned)val_min, (unsigned)val_max
+    nh_.getParam("color_detector/hu/metric", hu_metric);
+    nh_.getParam("color_detector/hu/soft_hard_area_thresh", hu_soft_hard_area_thresh);
+    nh_.getParam("color_detector/hu/max_dist_soft", hu_max_dist_soft);
+    nh_.getParam("color_detector/hu/max_dist_hard", hu_max_dist_hard);
+
+    std::vector<unsigned> th {(unsigned)luma_min, (unsigned)luma_max, 
+        (unsigned)a_min, (unsigned)a_max, (unsigned)b_min, (unsigned)b_max
     };
-    color_detector = new ColorDetector(th, (unsigned)min_area_pix, (unsigned)max_objects);
+    color_detector = new ColorDetector(th, (unsigned)min_area_pix, (unsigned)max_objects, single_main_target,
+        (unsigned)hu_metric, (unsigned)hu_soft_hard_area_thresh, hu_max_dist_soft, hu_max_dist_hard
+    );
     ROS_INFO("Initialized color detector with thresholds=(%d,%d,%d,%d,%d,%d)\
-        min_area_pix=%d max_objects=%d", hue_min, hue_max, sat_min, sat_max,\
-        val_min, val_max, min_area_pix, max_objects    
+        min_area_pix=%d max_objects=%d hu_metric=%d hu_area_thresh=%d hu_dist_soft=%f hu_dist_hard=%f", 
+        luma_min, luma_max, a_min, a_max, b_min, b_max, min_area_pix, max_objects,
+        hu_metric, hu_soft_hard_area_thresh, hu_max_dist_soft, hu_max_dist_hard
     );
 }
 
@@ -93,7 +106,7 @@ MbzircDetector::MbzircDetector(ros::NodeHandle nh)
     yolo_act_cl_(nh_, "/darknet_ros/detect_objects", true),
     dist_act_cl_(nh_, "/distance_finder/get_distance", true),
     current_cam_range(LONG_RANGE),
-    det_strategy(YOLO)
+    det_strategy(COLOR)
 {
     // Read the configuration
     readParameters();
@@ -219,6 +232,21 @@ std::vector<BBox> MbzircDetector::detect(const sensor_msgs::ImageConstPtr& msg_i
         case YOLO:
             // Just call Yolo
             bboxes = callYoloDetector(msg_img);
+            break;
+
+        case COLOR:
+            // Grab header (to recycle later)
+            hdr = msg_img->header;
+            // Convert to cv::Mat
+            try {
+                cv_img_ptr = cv_bridge::toCvCopy(msg_img, sensor_msgs::image_encodings::BGR8);
+            } catch (cv_bridge::Exception& cve) {
+                ROS_ERROR("cv_bridge: error converting img to OpenCV: %s", cve.what());
+                break;
+            }
+            cv_img = cv_img_ptr->image;
+            // Perform detection by color
+            bboxes = callColorDetector(cv_img);
             break;
 
         case COLOR_AND_YOLO:
