@@ -100,7 +100,7 @@ double DistanceFinder::findDistanceByProportion(const CameraParameters& cp,
     uint32_t x, uint32_t y, uint32_t w, uint32_t h)
 {
     // Observed flying ball radius in pixel (usually the largest dimension is closer to reality)
-    double fly_ball_radius_pix = std::max(w, h);
+    double fly_ball_radius_pix = std::max(w, h) / 2;
     // flying ball radius in pixel at calibration distance
     double calib_fly_ball_radius_pix = cp.resolution_width / cp.calib_fov_width * fly_ball_params.radius;
 
@@ -224,7 +224,7 @@ PosError DistanceFinder::findPosError(std::string cam_name,
     tf2::Quaternion q_corr;
     RPY orient;
     PosError pe;
-    double dist;
+    double dist = 50.0;
     double x_m_raw, y_m_raw, z_m_raw;
 
     try {
@@ -232,12 +232,29 @@ PosError DistanceFinder::findPosError(std::string cam_name,
         orient = findOrientation(header.stamp);
 
         if (cp.stereo) {
-            dist = findDistanceByDepthMap(cp, x, y, w, h, header.stamp);
-            // Fallback to proportional alg if dmap was unreadable
-            if (dist < 0)
-                dist = findDistanceByProportion(cp, x, y, w, h);
+            // Use depth map if available (stereo camera)
+            double dist_dmap, dist_prop;
+            dist_dmap = findDistanceByDepthMap(cp, x, y, w, h, header.stamp);
+            dist_prop = findDistanceByProportion(cp, x, y, w, h);
+            if (dist_dmap < 0) {
+                // if dmap was unreadable, fallback to prop dist
+                dist = dist_prop;
+                ROS_INFO("Using dist_prop (dmap unreadable)");
+            } else {
+                // if dist_dmap is available
+                if (0.75 * dist_dmap < dist_prop) {
+                    // prefer depth map (more accurate) even if slightly larger than prop dist
+                    dist = dist_dmap;
+                    ROS_INFO("Using dist_dmap");
+                } else {
+                    // choose the minimum (as dist_prop is almost never larger the actual object)
+                    dist = std::min(dist_dmap, dist_prop);
+                    ROS_INFO("Using dist_min (%.2f, %.2f)", dist_dmap, dist_prop);
+                }
+            }
         } else {
             dist = findDistanceByProportion(cp, x, y, w, h);
+            ROS_INFO("Using dist_prop (not stereo)");
         }
     
         pe.dist_m = dist;
@@ -326,7 +343,7 @@ void DistanceFinder::bboxesCallback(const distance_finder::ObjectBoxes::ConstPtr
         tpos.err_x_m = poserr.x_m;
         tpos.err_y_m = poserr.y_m;
         tpos_vec.targets_pos.push_back(tpos);
-        ROS_DEBUG("distance: %.2f  err_X=%.2f  err_Y=%.2f", tpos.dist, tpos.err_x_m, tpos.err_y_m);
+        ROS_INFO("distance: %.2f  err_X=%.2f  err_Y=%.2f", tpos.dist, tpos.err_x_m, tpos.err_y_m);
     }
 
     // Publish the result
