@@ -99,8 +99,8 @@ void DistanceFinder::getDistanceActionPreemptCallback()
 double DistanceFinder::findDistanceByProportion(const CameraParameters& cp, 
     uint32_t x, uint32_t y, uint32_t w, uint32_t h)
 {
-    // Observed flying ball radius in pixel
-    double fly_ball_radius_pix = (w + h)/2;
+    // Observed flying ball radius in pixel (usually the largest dimension is closer to reality)
+    double fly_ball_radius_pix = std::max(w, h);
     // flying ball radius in pixel at calibration distance
     double calib_fly_ball_radius_pix = cp.resolution_width / cp.calib_fov_width * fly_ball_params.radius;
 
@@ -117,14 +117,26 @@ double DistanceFinder::findDistanceByDepthMap(const CameraParameters& cp,
     ros::Duration one_nanosecond(0, 1);
     ros::Time search_timestamp = ts - one_nanosecond;
 
+    // Get the latest depth map published at (or before) the image timestamp
     sensor_msgs::ImageConstPtr dmap_ptr = dmap_cache_.getElemAfterTime(search_timestamp);
-    if ((dmap_ptr->header.stamp.sec != ts.sec) || (dmap_ptr->header.stamp.nsec != ts.nsec)) {
-        ROS_WARN("Could not match the depth map timestamp with the raw image one");
+    if (!dmap_ptr) {
+        dmap_ptr = dmap_cache_.getElemBeforeTime(ts);
+        if (! dmap_ptr) {
+            return -1.0;
+        }
+    }
+    
+    if (dmap_ptr->header.stamp + ros::Duration(0, 50000000) < ts) {
+        ROS_WARN("Latest depth map available is older than 50 ms ago, ignoring it");
         return -1.0;
     }
-    cv_bridge::CvImageConstPtr cv_dmap = cv_bridge::toCvCopy(dmap_ptr, sensor_msgs::image_encodings::TYPE_32FC1);
 
-    // Given the bounding box, read the depth from 9 internal points. 
+    // Convert the depth map to OpenCV format
+    cv_bridge::CvImageConstPtr cv_dmap = cv_bridge::toCvCopy(dmap_ptr, 
+        sensor_msgs::image_encodings::TYPE_32FC1
+    );
+
+    // Given the bounding box, read the depth from 9 internal points.
     // Sort them, then take the second minimum.
     // This is possibly better than taking the minimum as it may be a spurious outlier
     std::vector<float> depths;
@@ -170,28 +182,34 @@ RPY DistanceFinder::findOrientation(ros::Time ts)
     ros::Time search_timestamp = ts - one_nanosecond;
 
     geometry_msgs::PoseStampedConstPtr pose_ptr = pose_cache_.getElemAfterTime(search_timestamp);
-    if ((pose_ptr->header.stamp.sec != ts.sec) || (pose_ptr->header.stamp.nsec != ts.nsec)) {
-        // TODO fix next lines
-        // Note: standard cameras will almost always trigger this warning, as the pose is provided by another device
-        ROS_WARN("Could not match the pose timestamp with the raw image one");
-    } else {
-        double tx = pose_ptr->pose.position.x;
-        double ty = pose_ptr->pose.position.y;
-        double tz = pose_ptr->pose.position.z;
-
-        // orientation quaternion
-        tf2::Quaternion q(
-            pose_ptr->pose.orientation.x,
-            pose_ptr->pose.orientation.y,
-            pose_ptr->pose.orientation.z,
-            pose_ptr->pose.orientation.w
-        );
-
-        // rotation matrix
-        tf2::Matrix3x3 m(q);
-
-        m.getRPY(orient.roll, orient.pitch, orient.yaw);
+    if (! pose_ptr) {
+        pose_ptr = pose_cache_.getElemBeforeTime(ts);
+        if (! pose_ptr) {
+            return orient;
+        }
     }
+
+    if (pose_ptr->header.stamp + ros::Duration(0, 50000000) < ts) {
+        ROS_WARN("Latest pose available is older than 50 ms ago, ignoring it");
+        return orient;
+    }
+
+    double tx = pose_ptr->pose.position.x;
+    double ty = pose_ptr->pose.position.y;
+    double tz = pose_ptr->pose.position.z;
+
+    // orientation quaternion
+    tf2::Quaternion q(
+        pose_ptr->pose.orientation.x,
+        pose_ptr->pose.orientation.y,
+        pose_ptr->pose.orientation.z,
+        pose_ptr->pose.orientation.w
+    );
+
+    // rotation matrix
+    tf2::Matrix3x3 m(q);
+
+    m.getRPY(orient.roll, orient.pitch, orient.yaw);
 
     return orient;
 }
@@ -254,8 +272,8 @@ DistanceFinder::DistanceFinder(ros::NodeHandle nh)  // TODO reduce cache size to
   : nh_(nh),
     dmap_sub_(nh_, "/distance_finder/depth_map", 1),
     pose_sub_(nh_, "/distance_finder/pose", 1),
-    dmap_cache_(dmap_sub_, 20),
-    pose_cache_(pose_sub_, 20),
+    dmap_cache_(dmap_sub_, 30),
+    pose_cache_(pose_sub_, 30),
     dist_act_srv_(nh_, "get_distance",
         boost::bind(&DistanceFinder::getDistanceActionGoalCallback,
             this, _1
