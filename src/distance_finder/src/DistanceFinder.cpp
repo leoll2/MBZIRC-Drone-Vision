@@ -264,15 +264,16 @@ PosError DistanceFinder::findPosError(std::string cam_name,
         // position error in metres (w/o orientation adjustment)
         x_m_raw = pe.x_pix * ((cp.calib_fov_width * dist / cp.calib_dist) / (double)cp.resolution_width);
         y_m_raw = pe.y_pix * ((cp.calib_fov_height * dist / cp.calib_dist) / (double)cp.resolution_height);
-        z_m_raw = sqrt(dist*dist - x_m_raw*x_m_raw - y_m_raw*y_m_raw);
-        // position error in metres (with roll/pitch adjustment)
-        // Note that our (x,y,z) coordinates actually map to (y,z,x), since x is the roll axis, y the pitch, z the yaw
-        tf2::Vector3 err_m_raw(z_m_raw, x_m_raw, -y_m_raw);
-        q_corr.setRPY(orient.roll, orient.pitch, 0);
+        //z_m_raw = sqrt(dist*dist - x_m_raw*x_m_raw - y_m_raw*y_m_raw);
+        // Note that our (x,-y,z) coordinates actually map to (y,z,x), since x is the roll axis, y the pitch, z the yaw
+        // Roll adjustment
+        tf2::Vector3 err_m_raw(0, x_m_raw, y_m_raw);
+        q_corr.setRPY(orient.roll, 0, 0);
         q_corr.normalize();
         tf2::Vector3 err_m_corr = tf2::quatRotate(q_corr, err_m_raw);
-        pe.x_m = err_m_corr.y();
-        pe.y_m = -err_m_corr.z();
+
+        pe.x_m = err_m_corr.y();    // TODO
+        pe.y_m = err_m_corr.z();    // TODO
 
         ROS_INFO("Roll: %.2f  Pitch:%.2f  Yaw:%.2f", orient.roll*RAD2DEG, orient.pitch*RAD2DEG, orient.yaw*RAD2DEG);
         ROS_INFO("x_m_raw =%f  y_m_raw =%f  z_m_raw =%f", x_m_raw, y_m_raw, z_m_raw);
