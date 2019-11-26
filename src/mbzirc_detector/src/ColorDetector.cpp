@@ -28,24 +28,25 @@ void ColorDetector::loadCircleContour()
 {
     cv::Mat circle_img, circle_lab, circle_mask;
 
-    circle_img = cv::imread("circle.png", cv::IMREAD_COLOR);
+    circle_img = cv::imread(calib_dir + "circle.png", cv::IMREAD_COLOR);
     if (!circle_img.data) {
         std::cerr << "Missing calibration file (circle.png)" << std::endl;
         return;
     }
     circle_lab = cv_alg::bgr2lab(circle_img);
     circle_mask = cv_alg::LabColorFilter(circle_lab, &lb, &ub);
-    this->circle_con = cv_alg::findContours(circle_mask)[0];
+    this->circle_con = std::vector<cv::Point>(cv_alg::findContours(circle_mask)[0]);
 }
 
 
 /* Constructor */
 ColorDetector::ColorDetector(std::vector<unsigned> th, double min_area_pix,
-    unsigned max_objects, bool single_main_target, unsigned hu_metric, 
+    unsigned max_objects, std::string calib_dir, bool single_main_target, unsigned hu_metric, 
     unsigned hu_soft_hard_area_thresh, double hu_max_dist_soft, double hu_max_dist_hard)
 {
     this->min_area_pix = min_area_pix;
     this->max_objects = max_objects;
+    this->calib_dir = calib_dir;
     this->single_main_target = single_main_target;
     this->hu_metric = hu_metric;
     this->hu_soft_hard_area_thresh = hu_soft_hard_area_thresh;

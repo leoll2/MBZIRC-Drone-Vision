@@ -32,6 +32,7 @@ class MbzircDetector {
 
     CameraType current_cam_range;
     DetectType det_strategy;
+    std::string calib_dir;
     std::string input_camera_topic;
     std::string long_camera_name;
     std::string long_camera_topic;

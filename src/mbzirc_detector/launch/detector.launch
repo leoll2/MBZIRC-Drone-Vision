@@ -27,6 +27,7 @@
     <node pkg="mbzirc_detector" type="mbzirc_detector" name="mbzirc_detector" output="screen" launch-prefix="$(arg launch_prefix)">
         <param name="short_cam_name" type="str" value="$(arg short_cam)" />
         <param name="long_cam_name" type="str" value="$(arg long_cam)" />
+        <param name="calib_dir" type="str" value="$(find mbzirc_detector)/calib/" />
     </node>
 
 </launch>

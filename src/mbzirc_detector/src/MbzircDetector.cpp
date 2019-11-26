@@ -23,6 +23,8 @@ void MbzircDetector::readParameters()
     nh_.getParam("short_cam_name", short_camera_name);
     nh_.getParam("cameras/" + short_camera_name + "/topic", short_camera_topic);
     nh_.getParam("cameras/" + short_camera_name + "/stereo", short_camera_stereo);
+
+    nh_.getParam("calib_dir", calib_dir);
 }
 
 
@@ -56,8 +58,9 @@ void MbzircDetector::initColorDetector()
     std::vector<unsigned> th {(unsigned)luma_min, (unsigned)luma_max, 
         (unsigned)a_min, (unsigned)a_max, (unsigned)b_min, (unsigned)b_max
     };
-    color_detector = new ColorDetector(th, (unsigned)min_area_pix, (unsigned)max_objects, single_main_target,
-        (unsigned)hu_metric, (unsigned)hu_soft_hard_area_thresh, hu_max_dist_soft, hu_max_dist_hard
+    color_detector = new ColorDetector(th, (unsigned)min_area_pix, (unsigned)max_objects, calib_dir, 
+        single_main_target, (unsigned)hu_metric, (unsigned)hu_soft_hard_area_thresh, 
+        hu_max_dist_soft, hu_max_dist_hard
     );
     ROS_INFO("Initialized color detector with thresholds=(%d,%d,%d,%d,%d,%d)\
         min_area_pix=%d max_objects=%d hu_metric=%d hu_area_thresh=%d hu_dist_soft=%f hu_dist_hard=%f", 

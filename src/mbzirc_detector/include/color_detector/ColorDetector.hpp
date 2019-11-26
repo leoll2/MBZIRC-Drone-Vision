@@ -17,6 +17,7 @@ class ColorDetector {
     unsigned b_max;
     cv::Scalar lb;
     cv::Scalar ub;
+    std::string calib_dir;
     bool single_main_target;
     double min_area_pix;
     unsigned max_objects;
@@ -29,8 +30,8 @@ class ColorDetector {
     void setColorThresholds(const std::vector<unsigned> &th);
     void loadCircleContour();
 public:
-    ColorDetector(std::vector<unsigned> th, double min_area_pix,
-        unsigned max_objects, bool single_main_target, unsigned hu_metric, 
+    ColorDetector(std::vector<unsigned> th, double min_area_pix,  unsigned max_objects, 
+        std::string calib_dir, bool single_main_target, unsigned hu_metric, 
         unsigned hu_soft_hard_area_thresh, double hu_max_dist_soft, double hu_max_dist_hard);
     ~ColorDetector();
     std::vector<BBox> detect(const cv::Mat &img);
