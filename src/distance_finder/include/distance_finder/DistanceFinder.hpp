@@ -15,8 +15,8 @@
 
 #include <distance_finder/ObjectBox.h>
 #include <distance_finder/ObjectBoxes.h>
-#include <distance_finder/TargetPos.h>
-#include <distance_finder/TargetPosVec.h>
+#include <distance_finder/ObjPos.h>
+#include <distance_finder/ObjPosVec.h>
 #include <distance_finder/GetDistanceAction.h>
 
 namespace distance_finder {

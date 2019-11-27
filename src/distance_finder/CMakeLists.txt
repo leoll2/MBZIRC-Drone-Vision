@@ -52,8 +52,8 @@ add_message_files(
   FILES
     ObjectBox.msg
     ObjectBoxes.msg
-    TargetPos.msg
-    TargetPosVec.msg
+    ObjPos.msg
+    ObjPosVec.msg
 )
 
 ## Generate services in the 'srv' folder

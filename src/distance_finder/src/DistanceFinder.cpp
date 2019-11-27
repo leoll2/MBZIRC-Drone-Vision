@@ -313,7 +313,7 @@ DistanceFinder::DistanceFinder(ros::NodeHandle nh)  // TODO reduce cache size to
     initDistanceActionServer();
 
     // Publish position
-    target_pos_pub_ = nh_.advertise<distance_finder::TargetPosVec>(
+    target_pos_pub_ = nh_.advertise<distance_finder::ObjPosVec>(
         target_pos_topic, target_pos_q_size, target_pos_latch
     );
 
@@ -333,28 +333,37 @@ DistanceFinder::~DistanceFinder() {}
 /* Callback for new bounding box received */
 void DistanceFinder::bboxesCallback(const distance_finder::ObjectBoxes::ConstPtr& obj_boxes_ptr)
 {
-    distance_finder::TargetPosVec tpos_vec;
+    distance_finder::ObjPosVec tpos_vec;
     std::string cam_name;
     
-    // Extract the camera name (and make sure it exists)
+    // Extract the camera name (and make sure it exists) and relative parameters
     cam_name = obj_boxes_ptr->cam_name;
     if (cam_params.find(cam_name) == cam_params.end())
         ROS_ERROR("Can't estimate distance from an unknown camera image (%s)", cam_name.c_str());
+    const CameraParameters &cp = cam_params.at(cam_name);
+
     // Extract and reuse the header (to have the same timestamp)
     tpos_vec.header = obj_boxes_ptr->header;
 
     for (const auto &obj : obj_boxes_ptr->obj_boxes) {
         distance_finder::PosError poserr;
-        distance_finder::TargetPos tpos;
+        distance_finder::ObjPos tpos;
         // Compute the distance and position errors
         poserr = findPosError(cam_name, obj.x, obj.y, obj.w, obj.h, tpos_vec.header);
         tpos.obj_class = obj.obj_class;
+        tpos.res_w = (unsigned)cp.resolution_width;
+        tpos.res_h = (unsigned)cp.resolution_height;
         tpos.dist = poserr.dist_m;
         tpos.err_x_m = poserr.x_m;
         tpos.err_y_m = poserr.y_m;
+        tpos.err_x_pix = poserr.x_pix;
+        tpos.err_y_pix = poserr.y_pix;
         tpos_vec.targets_pos.push_back(tpos);
         ROS_INFO("distance: %.2f  err_X=%.2f  err_Y=%.2f", tpos.dist, tpos.err_x_m, tpos.err_y_m);
     }
+
+    if (obj_boxes_ptr->obj_boxes.size() == 0)
+        ROS_INFO("No object found");
 
     // Publish the result
     target_pos_pub_.publish(tpos_vec);

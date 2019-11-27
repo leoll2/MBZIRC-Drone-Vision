@@ -56,6 +56,7 @@ class MbzircDetector {
     std::vector<BBox> callYoloDetector(const cv::Mat &img, std_msgs::Header header);
     std::vector<BBox> callColorDetector(const cv::Mat &img);
     std::vector<BBox> detect(const sensor_msgs::ImageConstPtr& msg_img);
+    std::string det2nav_class(std::string det_class);
 public:
     MbzircDetector(ros::NodeHandle nh);
     ~MbzircDetector();

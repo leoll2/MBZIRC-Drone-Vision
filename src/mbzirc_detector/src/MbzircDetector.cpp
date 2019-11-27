@@ -292,6 +292,21 @@ std::vector<BBox> MbzircDetector::detect(const sensor_msgs::ImageConstPtr& msg_i
 }
 
 
+/* Map names used by the detector with those used by navigation code
+ * TODO: maybe this can be moved to a configuration file*/
+std::string MbzircDetector::det2nav_class(std::string det_class)
+{
+    if (det_class.compare("ball") == 0)
+        return std::string("primary_target");
+    else if (det_class.compare("drone") == 0)
+        return std::string("drone");
+    else {
+        ROS_WARN("Unrecognized class name");
+        return std::string("secondary_target");
+    }
+}
+
+
 /* Callback for new camera input */
 void MbzircDetector::cameraCallback(const sensor_msgs::ImageConstPtr& msg)
 {
@@ -311,11 +326,11 @@ void MbzircDetector::cameraCallback(const sensor_msgs::ImageConstPtr& msg)
         );
     }
 
-    // Publish result (if non empty)
-    if (bboxes_topic_enable && !bboxes.empty()) {
+    // Publish result (even if empty, for compatibility reasons)
+    if (bboxes_topic_enable) {
         for (const auto &b : bboxes) {
             distance_finder::ObjectBox ros_bbox;
-            ros_bbox.obj_class = b.obj_class;
+            ros_bbox.obj_class = det2nav_class(b.obj_class);
             ros_bbox.x = b.x + (b.w/2);
             ros_bbox.y = b.y + (b.h/2);
             ros_bbox.w = b.w;
