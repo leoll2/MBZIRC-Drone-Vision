@@ -5,12 +5,15 @@
 /* Read the configuration from file */
 void MbzircDetector::readParameters()
 {
+    std::string str;
+
     nh_.getParam("subscribers/input_camera/topic", input_camera_topic);
 
     nh_.getParam("publishers/bounding_boxes/topic", bboxes_topic);
     nh_.getParam("publishers/bounding_boxes/enable", bboxes_topic_enable);
     nh_.getParam("publishers/bounding_boxes/queue_size", bboxes_q_size);
     nh_.getParam("publishers/bounding_boxes/latch", bboxes_latch);
+    nh_.getParam("publishers/bounding_boxes/pub_empty", bboxes_pub_empty);
     
     nh_.getParam("publishers/detection_image/topic", det_img_topic);
     nh_.getParam("publishers/detection_image/enable", det_img_topic_enable);
@@ -25,6 +28,16 @@ void MbzircDetector::readParameters()
     nh_.getParam("cameras/" + short_camera_name + "/stereo", short_camera_stereo);
 
     nh_.getParam("calib_dir", calib_dir);
+
+    nh_.getParam("detection/strategy", str);
+    if (str.compare("COLOR") == 0)
+        det_strategy = COLOR;
+    else if (str.compare("YOLO") == 0)
+        det_strategy = YOLO;
+    else if (str.compare("COLOR_AND_YOLO") == 0)
+        det_strategy = COLOR_AND_YOLO;
+    else
+        ROS_ERROR("Unknown detection strategy in the config file: %s", str.c_str());
 }
 
 
@@ -32,31 +45,42 @@ void MbzircDetector::readParameters()
 void MbzircDetector::initColorDetector()
 {
     bool single_main_target;
-    int luma_min, luma_max, a_min, a_max, b_min, b_max;
     int min_area_pix;
     int max_objects;
     int hu_metric;
     int hu_soft_hard_area_thresh;
     double hu_max_dist_soft, hu_max_dist_hard;
 
-    nh_.getParam("color_detector/lab_thresh/luma_min", luma_min);
-    nh_.getParam("color_detector/lab_thresh/luma_max", luma_max);
-    nh_.getParam("color_detector/lab_thresh/a_min", a_min);
-    nh_.getParam("color_detector/lab_thresh/a_max", a_max);
-    nh_.getParam("color_detector/lab_thresh/b_min", b_min);
-    nh_.getParam("color_detector/lab_thresh/b_max", b_max);
+    nh_.getParam("color_detection/primary/lab_thresh/luma_min", primary_thresh.l_min);
+    nh_.getParam("color_detection/primary/lab_thresh/luma_max", primary_thresh.l_max);
+    nh_.getParam("color_detection/primary/lab_thresh/a_min", primary_thresh.a_min);
+    nh_.getParam("color_detection/primary/lab_thresh/a_max", primary_thresh.a_max);
+    nh_.getParam("color_detection/primary/lab_thresh/b_min", primary_thresh.b_min);
+    nh_.getParam("color_detection/primary/lab_thresh/b_max", primary_thresh.b_max);
 
-    nh_.getParam("color_detector/min_area_pix", min_area_pix);
-    nh_.getParam("color_detector/max_objects", max_objects);
-    nh_.getParam("color_detector/single_main_target", single_main_target);
+    nh_.getParam("color_detection/secondary/hls_thresh/hue_min", secondary_thresh.h_min);
+    nh_.getParam("color_detection/secondary/hls_thresh/hue_max", secondary_thresh.h_max);
+    nh_.getParam("color_detection/secondary/hls_thresh/lig_min", secondary_thresh.l_min);
+    nh_.getParam("color_detection/secondary/hls_thresh/lig_max", secondary_thresh.l_max);
+    nh_.getParam("color_detection/secondary/hls_thresh/sat_min", secondary_thresh.s_min);
+    nh_.getParam("color_detection/secondary/hls_thresh/sat_max", secondary_thresh.s_max);
 
-    nh_.getParam("color_detector/hu/metric", hu_metric);
-    nh_.getParam("color_detector/hu/soft_hard_area_thresh", hu_soft_hard_area_thresh);
-    nh_.getParam("color_detector/hu/max_dist_soft", hu_max_dist_soft);
-    nh_.getParam("color_detector/hu/max_dist_hard", hu_max_dist_hard);
+    nh_.getParam("color_detection/min_area_pix", min_area_pix);
+    nh_.getParam("color_detection/max_objects", max_objects);
+    nh_.getParam("color_detection/single_main_target", single_main_target);
 
-    std::vector<unsigned> th {(unsigned)luma_min, (unsigned)luma_max, 
-        (unsigned)a_min, (unsigned)a_max, (unsigned)b_min, (unsigned)b_max
+    nh_.getParam("color_detection/hu/metric", hu_metric);
+    nh_.getParam("color_detection/hu/soft_hard_area_thresh", hu_soft_hard_area_thresh);
+    nh_.getParam("color_detection/hu/max_dist_soft", hu_max_dist_soft);
+    nh_.getParam("color_detection/hu/max_dist_hard", hu_max_dist_hard);
+
+    std::vector<unsigned> th {
+        (unsigned)primary_thresh.l_min, 
+        (unsigned)primary_thresh.l_max, 
+        (unsigned)primary_thresh.a_min, 
+        (unsigned)primary_thresh.a_max, 
+        (unsigned)primary_thresh.b_min, 
+        (unsigned)primary_thresh.b_max
     };
     color_detector = new ColorDetector(th, (unsigned)min_area_pix, (unsigned)max_objects, calib_dir, 
         single_main_target, (unsigned)hu_metric, (unsigned)hu_soft_hard_area_thresh, 
@@ -64,7 +88,8 @@ void MbzircDetector::initColorDetector()
     );
     ROS_INFO("Initialized color detector with thresholds=(%d,%d,%d,%d,%d,%d)\
         min_area_pix=%d max_objects=%d hu_metric=%d hu_area_thresh=%d hu_dist_soft=%f hu_dist_hard=%f", 
-        luma_min, luma_max, a_min, a_max, b_min, b_max, min_area_pix, max_objects,
+        primary_thresh.l_min, primary_thresh.l_max, primary_thresh.a_min, primary_thresh.a_max,
+        primary_thresh.b_min, primary_thresh.b_max, min_area_pix, max_objects,
         hu_metric, hu_soft_hard_area_thresh, hu_max_dist_soft, hu_max_dist_hard
     );
 }
@@ -326,8 +351,8 @@ void MbzircDetector::cameraCallback(const sensor_msgs::ImageConstPtr& msg)
         );
     }
 
-    // Publish result (even if empty, for compatibility reasons)
-    if (bboxes_topic_enable) {
+    // Publish result (if empty, may skip depending on configuration)
+    if (bboxes_topic_enable && (bboxes_pub_empty || !bboxes.empty())) {
         for (const auto &b : bboxes) {
             distance_finder::ObjectBox ros_bbox;
             ros_bbox.obj_class = det2nav_class(b.obj_class);

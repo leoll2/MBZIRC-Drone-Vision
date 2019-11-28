@@ -1,24 +1,34 @@
-## Color detector configuration file
+## Detection configuration file
 
-color_detector:
+detection:
 
-    # CIE L*a*b* thresholds
-    lab_thresh:
-        luma_min: 0
-        luma_max: 255
-        a_min: 160 
-        a_max: 255
-        b_min: 130
-        b_max: 255
+    # Algorithm to use for detection: COLOR, YOLO, COLOR_AND_YOLO
+    strategy: COLOR
 
-    # HSV thresholds
-    hsv_thresh:
-        hue_min: 0 
-        hue_max: 10
-        sat_min: 200
-        sat_max: 255
-        val_min: 70
-        val_max: 255
+
+color_detection:
+
+    primary:
+
+        # CIE L*a*b* thresholds for primary target
+        lab_thresh:
+            luma_min: 0
+            luma_max: 255
+            a_min: 160 
+            a_max: 255
+            b_min: 130
+            b_max: 255
+    
+    secondary:
+
+        # HLS thresholds for secondary target
+        hls_thresh:
+            hue_min: 0 
+            hue_max: 180
+            lig_min: 140
+            lig_max: 255
+            sat_min: 0
+            sat_max: 70
 
     # Minimum area (pixel); smaller objects are ignored
     min_area_pix: 6

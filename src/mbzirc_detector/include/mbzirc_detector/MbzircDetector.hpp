@@ -16,8 +16,27 @@
 
 
 class MbzircDetector {
+
     enum CameraType {SHORT_RANGE, LONG_RANGE};
     enum DetectType {YOLO, COLOR, COLOR_AND_YOLO};
+
+    typedef struct hls_thresh {
+        int h_min;
+        int h_max;
+        int l_min;
+        int l_max;
+        int s_min;
+        int s_max;
+    } hls_thresh;
+
+    typedef struct lab_thresh {
+        int l_min;
+        int l_max;
+        int a_min;
+        int a_max;
+        int b_min;
+        int b_max;
+    } lab_thresh;
     
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;
@@ -32,6 +51,8 @@ class MbzircDetector {
 
     CameraType current_cam_range;
     DetectType det_strategy;
+    lab_thresh primary_thresh;
+    hls_thresh secondary_thresh;
     std::string calib_dir;
     std::string input_camera_topic;
     std::string long_camera_name;
@@ -44,6 +65,7 @@ class MbzircDetector {
     bool bboxes_topic_enable;
     int bboxes_q_size;
     bool bboxes_latch;
+    bool bboxes_pub_empty;
     std::string det_img_topic;
     bool det_img_topic_enable;
     int det_img_q_size;
