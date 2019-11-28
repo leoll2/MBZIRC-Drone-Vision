@@ -45,25 +45,27 @@ void MbzircDetector::readParameters()
 void MbzircDetector::initColorDetector()
 {
     bool single_main_target;
+    int pl_min, pl_max, pa_min, pa_max, pb_min, pb_max;
+    int sh_min, sh_max, sl_min, sl_max, ss_min, ss_max;
     int min_area_pix;
     int max_objects;
     int hu_metric;
     int hu_soft_hard_area_thresh;
     double hu_max_dist_soft, hu_max_dist_hard;
 
-    nh_.getParam("color_detection/primary/lab_thresh/luma_min", primary_thresh.l_min);
-    nh_.getParam("color_detection/primary/lab_thresh/luma_max", primary_thresh.l_max);
-    nh_.getParam("color_detection/primary/lab_thresh/a_min", primary_thresh.a_min);
-    nh_.getParam("color_detection/primary/lab_thresh/a_max", primary_thresh.a_max);
-    nh_.getParam("color_detection/primary/lab_thresh/b_min", primary_thresh.b_min);
-    nh_.getParam("color_detection/primary/lab_thresh/b_max", primary_thresh.b_max);
+    nh_.getParam("color_detection/primary/lab_thresh/luma_min", pl_min);
+    nh_.getParam("color_detection/primary/lab_thresh/luma_max", pl_max);
+    nh_.getParam("color_detection/primary/lab_thresh/a_min", pa_min);
+    nh_.getParam("color_detection/primary/lab_thresh/a_max", pa_max);
+    nh_.getParam("color_detection/primary/lab_thresh/b_min", pb_min);
+    nh_.getParam("color_detection/primary/lab_thresh/b_max", pb_max);
 
-    nh_.getParam("color_detection/secondary/hls_thresh/hue_min", secondary_thresh.h_min);
-    nh_.getParam("color_detection/secondary/hls_thresh/hue_max", secondary_thresh.h_max);
-    nh_.getParam("color_detection/secondary/hls_thresh/lig_min", secondary_thresh.l_min);
-    nh_.getParam("color_detection/secondary/hls_thresh/lig_max", secondary_thresh.l_max);
-    nh_.getParam("color_detection/secondary/hls_thresh/sat_min", secondary_thresh.s_min);
-    nh_.getParam("color_detection/secondary/hls_thresh/sat_max", secondary_thresh.s_max);
+    nh_.getParam("color_detection/secondary/hls_thresh/hue_min", sh_min);
+    nh_.getParam("color_detection/secondary/hls_thresh/hue_max", sh_max);
+    nh_.getParam("color_detection/secondary/hls_thresh/lig_min", sl_min);
+    nh_.getParam("color_detection/secondary/hls_thresh/lig_max", sl_max);
+    nh_.getParam("color_detection/secondary/hls_thresh/sat_min", ss_min);
+    nh_.getParam("color_detection/secondary/hls_thresh/sat_max", ss_max);
 
     nh_.getParam("color_detection/min_area_pix", min_area_pix);
     nh_.getParam("color_detection/max_objects", max_objects);
@@ -74,13 +76,18 @@ void MbzircDetector::initColorDetector()
     nh_.getParam("color_detection/hu/max_dist_soft", hu_max_dist_soft);
     nh_.getParam("color_detection/hu/max_dist_hard", hu_max_dist_hard);
 
+    this->primary_thresh_lb = cv::Scalar(pl_min, pa_min, pb_min);
+    this->primary_thresh_ub = cv::Scalar(pl_max, pa_max, pb_max);
+    this->secondary_thresh_lb = cv::Scalar(sh_min, sl_min, ss_max);
+    this->secondary_thresh_ub = cv::Scalar(sh_max, sh_max, ss_max);
+
     std::vector<unsigned> th {
-        (unsigned)primary_thresh.l_min, 
-        (unsigned)primary_thresh.l_max, 
-        (unsigned)primary_thresh.a_min, 
-        (unsigned)primary_thresh.a_max, 
-        (unsigned)primary_thresh.b_min, 
-        (unsigned)primary_thresh.b_max
+        (unsigned)pl_min, 
+        (unsigned)pl_max, 
+        (unsigned)pa_min, 
+        (unsigned)pa_max, 
+        (unsigned)pb_min, 
+        (unsigned)pb_max
     };
     color_detector = new ColorDetector(th, (unsigned)min_area_pix, (unsigned)max_objects, calib_dir, 
         single_main_target, (unsigned)hu_metric, (unsigned)hu_soft_hard_area_thresh, 
@@ -88,8 +95,7 @@ void MbzircDetector::initColorDetector()
     );
     ROS_INFO("Initialized color detector with thresholds=(%d,%d,%d,%d,%d,%d)\
         min_area_pix=%d max_objects=%d hu_metric=%d hu_area_thresh=%d hu_dist_soft=%f hu_dist_hard=%f", 
-        primary_thresh.l_min, primary_thresh.l_max, primary_thresh.a_min, primary_thresh.a_max,
-        primary_thresh.b_min, primary_thresh.b_max, min_area_pix, max_objects,
+        pl_min, pl_max, pa_min, pa_max, pb_min, pb_max, min_area_pix, max_objects,
         hu_metric, hu_soft_hard_area_thresh, hu_max_dist_soft, hu_max_dist_hard
     );
 }
@@ -245,6 +251,46 @@ inline std::vector<BBox> MbzircDetector::callColorDetector(const cv::Mat& img)
 }
 
 
+/* Yolo can detect balls, but gives no information about their colors.
+ * Since we need to know if the ball is red or white, this function
+ * infers the color with CV techniques  */
+void MbzircDetector::adjustClassByColor(cv::Mat &cv_img, std::vector<BBox> &bboxes)
+{
+    for (auto &bb : bboxes) {
+        /* Adjust the class for balls.
+           Although the logic below looks nasty, it is based on practical considerations
+           to optimize performance. First you check if it's white (which is the most likely
+           case, as the majority of balls are white); if it doesn't look white, then you check
+           if it is red; if not, assuming no other ball color exist, probably we did fail
+           the check if white test. */
+        if (bb.obj_class.compare("ball") == 0) {
+            cv::Rect rbb(bb.x, bb.y, bb.w, bb.h);
+            cv::Rect rbb_mid = cv_alg::resizeBox(rbb, 1, 2);
+            cv::Mat obj_mid_img = cv_img(rbb_mid);
+            cv::Mat obj_mid_hls = cv_alg::bgr2hls(obj_mid_img);
+            cv::Mat obj_mid_sec_mask = cv_alg::HLSColorFilter(obj_mid_hls, 
+                &secondary_thresh_lb, &secondary_thresh_ub
+            );
+            int n_pixels_white = cv::countNonZero(obj_mid_sec_mask);
+            if ((double)n_pixels_white / (rbb_mid.width * rbb_mid.height) > 0.3) {
+                bb.obj_class = std::string("ball_white");
+            } else {
+                cv::Mat obj_mid_lab = cv_alg::bgr2lab(obj_mid_img);
+                cv::Mat obj_mid_pri_mask = cv_alg::LabColorFilter(obj_mid_lab, 
+                    &primary_thresh_lb, &primary_thresh_ub
+                );
+                int n_pixels_red = cv::countNonZero(obj_mid_pri_mask);
+                if ((double)n_pixels_red / (rbb_mid.width * rbb_mid.height) > 0.3) {
+                    bb.obj_class = std::string("ball_red");
+                } else {
+                    bb.obj_class = std::string("ball_white");
+                }
+            }
+        }
+    }
+}
+
+
 /* Detect objects */
 std::vector<BBox> MbzircDetector::detect(const sensor_msgs::ImageConstPtr& msg_img)
 {
@@ -258,13 +304,20 @@ std::vector<BBox> MbzircDetector::detect(const sensor_msgs::ImageConstPtr& msg_i
     switch (det_strategy) {
 
         case YOLO:
-            // Just call Yolo
+            // Convert to cv::Mat
+            try {
+                cv_img_ptr = cv_bridge::toCvCopy(msg_img, sensor_msgs::image_encodings::BGR8);
+            } catch (cv_bridge::Exception& cve) {
+                ROS_ERROR("cv_bridge: error converting img to OpenCV: %s", cve.what());
+                break;
+            }
+            cv_img = cv_img_ptr->image;
+            // Call Yolo
             bboxes = callYoloDetector(msg_img);
+            adjustClassByColor(cv_img, bboxes);
             break;
 
         case COLOR:
-            // Grab header (to recycle later)
-            hdr = msg_img->header;
             // Convert to cv::Mat
             try {
                 cv_img_ptr = cv_bridge::toCvCopy(msg_img, sensor_msgs::image_encodings::BGR8);
@@ -278,7 +331,7 @@ std::vector<BBox> MbzircDetector::detect(const sensor_msgs::ImageConstPtr& msg_i
             break;
 
         case COLOR_AND_YOLO:
-            // Grab header (to recycle later)
+            // Grab header (to recycle later) TODO: probably can be removed, not used like intended
             hdr = msg_img->header;
             // Convert to cv::Mat
             try {
@@ -308,6 +361,7 @@ std::vector<BBox> MbzircDetector::detect(const sensor_msgs::ImageConstPtr& msg_i
                     bboxes.push_back(true_bbox);
                 }
             }
+            adjustClassByColor(cv_img, bboxes);
             break;
 
         default:
@@ -321,12 +375,14 @@ std::vector<BBox> MbzircDetector::detect(const sensor_msgs::ImageConstPtr& msg_i
  * TODO: maybe this can be moved to a configuration file*/
 std::string MbzircDetector::det2nav_class(std::string det_class)
 {
-    if (det_class.compare("ball") == 0)
+    if (det_class.compare("ball_red") == 0)
         return std::string("primary_target");
+    else if (det_class.compare("ball_white") == 0)
+        return std::string("secondary_target");
     else if (det_class.compare("drone") == 0)
         return std::string("drone");
     else {
-        ROS_WARN("Unrecognized class name");
+        ROS_WARN("Unrecognized class name: %s", det_class.c_str());
         return std::string("secondary_target");
     }
 }

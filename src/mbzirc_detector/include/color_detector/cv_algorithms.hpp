@@ -10,11 +10,17 @@ namespace cv_alg {
 
     cv::Mat bgr2hsv(const cv::Mat &src);
     
+    cv::Mat bgr2hls(const cv::Mat &src);
+
     cv::Mat bgr2lab(const cv::Mat &src);
 
     cv::Mat HSVColorFilter(const cv::Mat &src,
         const cv::Scalar *lb1, const cv::Scalar *ub1,
         const cv::Scalar *lb2=nullptr, const cv::Scalar *ub2=nullptr
+    );
+
+    cv::Mat HLSColorFilter(const cv::Mat &src,
+        const cv::Scalar *lb, const cv::Scalar *ub
     );
     
     cv::Mat LabColorFilter(const cv::Mat &src,
@@ -29,5 +35,5 @@ namespace cv_alg {
 
     std::vector<std::vector<cv::Point>> findContours(const cv::Mat &src);
 
-    cv::Rect resizeBox(const cv::Rect &r, const unsigned scale);
+    cv::Rect resizeBox(const cv::Rect &r, const unsigned scale_mul, const unsigned scale_div=1);
 }

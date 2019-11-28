@@ -143,7 +143,7 @@ std::vector<BBox> ColorDetector::detect(const cv::Mat &img)
             b.w = roi.width;
             b.h = roi.height;
             b.prob = 0.5;   // TODO
-            b.obj_class = "ball";
+            b.obj_class = "ball_red";
             res_bboxes.push_back(b);
         }
     }

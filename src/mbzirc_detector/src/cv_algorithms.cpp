@@ -72,6 +72,15 @@ namespace cv_alg {
     }
 
 
+    /* Convert a frame from BGR to HLS */
+    cv::Mat bgr2hls(const cv::Mat &src)
+    {
+        cv::Mat dst;
+        cvtColor(src, dst, cv::COLOR_BGR2HLS);
+        return dst;
+    }
+
+
     /* Convert a frame from BGR to CIE L*a*b* */
     cv::Mat bgr2lab(const cv::Mat &src)
     {
@@ -114,6 +123,25 @@ namespace cv_alg {
             cv::inRange(src, *lb2, *ub2, mask2);
             dst = mask1 | mask2;
         }
+        return dst;
+    }
+
+
+    /* Compute HLS color mask based on the specified thresholds.
+     *
+     * Note: the src frame is assumed to be already in HLS format.
+     * Parameters
+     * ----------
+     * lb : Scalar
+     *      HLS lower bound
+     * ub : Scalar
+     *      HLS upper bound
+     */
+    cv::Mat HLSColorFilter(const cv::Mat &src, 
+        const cv::Scalar *lb, const cv::Scalar *ub) 
+    {
+        cv::Mat dst;
+        cv::inRange(src, *lb, *ub, dst);
         return dst;
     }
 
@@ -193,17 +221,20 @@ namespace cv_alg {
      * ----------
      * r : unsigned
      *    initial Rectangle
-     * scale : unsigned
-     *    scaling factor
+     * scale_mul : unsigned
+     *    multiplying scaling factor (magnify)
+     * scale_div : unsigned
+     *    dividing scaling factor (shrink)
+     *
      */
-    cv::Rect resizeBox(const cv::Rect &r, const unsigned scale)
+    cv::Rect resizeBox(const cv::Rect &r, const unsigned scale_mul, const unsigned scale_div)
     {
         cv::Rect res_box;
 
         res_box.x = r.x + r.width/2;
         res_box.y = r.y + r.height/2;
-        res_box.width = r.width * scale;
-        res_box.height = r.height * scale;
+        res_box.width = r.width * scale_mul / scale_div;
+        res_box.height = r.height * scale_mul / scale_div;
 
         res_box.x = std::max(0, res_box.x - res_box.width/2);
         res_box.y = std::max(0, res_box.y - res_box.height/2);
