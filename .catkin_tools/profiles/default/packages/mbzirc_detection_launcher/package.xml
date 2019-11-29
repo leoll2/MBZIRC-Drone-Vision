@@ -3,9 +3,10 @@
   <name>mbzirc_detection_launcher</name>
   <version>1.0.0</version>
   <description>Launcher files for the detection module</description>
-  <maintainer email="l.lai@santannapisa.it">Leonardo Lai</maintainer>
+  <maintainer email="l.lai@sssup.it">Leonardo Lai</maintainer>
   <license>MIT</license>
 
+  <depend>zed_wrapper</depend>
   <depend>darknet_ros</depend>
   <buildtool_depend>catkin</buildtool_depend>
 

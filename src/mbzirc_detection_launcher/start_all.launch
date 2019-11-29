@@ -2,9 +2,15 @@
 
 <launch>
 
+    <!-- =============================================== -->
+    <!-- =          YOU CAN CONFIGURE THESE            = -->
+    <!-- =============================================== -->
+
     <!-- Choose here the default camera configuration -->
-    <arg name="short_cam" default="zed" />
-    <arg name="long_cam" default="mobius" />
+    <!-- Allowed values for cam_layout: dual, single  -->
+    <arg name="cam_layout" default="single" />
+    <arg name="short_cam" default="mobius" />
+    <arg name="long_cam" default="runcam2" />
 
     <!-- Choose here the streaming configuration -->
     <arg name="stream_port" default="8080" />
@@ -12,15 +18,22 @@
     <arg name="stream_type" default="h264" />
 
 
+
+    <!-- =============================================== -->
+    <!-- =            DO NOT MODIFY THESE              = -->
+    <!-- =============================================== -->
+
     <!-- Camera inputs -->
     <include file="$(find mbzirc_detection_launcher)/start_cameras.launch" >
+        <arg name="cam_layout" value="$(arg cam_layout)" />
         <arg name="short_cam" value="$(arg short_cam)" />
         <arg name="long_cam" value="$(arg long_cam)" />
     </include>
 
-    <!-- Camera multiplexer -->
-    <node pkg="topic_tools" type="mux" name="mux_cam" args="mux_cam/image_raw $(arg long_cam)/image_raw $(arg short_cam)/image_raw mux:=mux_cam">
+    <!-- Camera multiplexer (if dual layout) -->
+    <node pkg="topic_tools" type="mux" name="mux_cam" args="mux_cam/image_raw $(arg long_cam)/image_raw $(arg short_cam)/image_raw mux:=mux_cam" if="$(eval arg('cam_layout') == 'dual')" >
     </node>
+    <remap from="mux_cam/image_raw" to="$(arg short_cam)/image_raw" if="$(eval arg('cam_layout') == 'single')" />
 
     <!-- Distance finder -->
     <group>
@@ -35,6 +48,7 @@
 
     <!-- High-level detector -->
     <include file="$(find mbzirc_detector)/launch/detector.launch" >
+        <arg name="cam_layout" value="$(arg cam_layout)" />
         <arg name="short_cam" value="$(arg short_cam)" />
         <arg name="long_cam" value="$(arg long_cam)" />
     </include>

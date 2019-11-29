@@ -4,6 +4,7 @@
 
     <!-- Suggested camera sizes: 640x480, 1280x720 -->
 
+    <arg name="cam_layout" default="dual" />
     <arg name="short_cam" default="zed" />
     <arg name="long_cam" default="mobius" />
 
@@ -23,19 +24,21 @@
     </include>
 
     <!-- Long-range camera -->
-    <include file="$(find video_stream_opencv)/launch/camera.launch" unless="$(eval arg('long_cam') == 'zed')">
-    	<arg name="camera_name" value="$(arg long_cam)" />
-    	<!-- device identifier /dev/videoX -->
-    	<arg name="video_stream_provider" value="1" />
-    	<!-- camera fps -->
-    	<arg name="set_camera_fps" value="30" />
-    	<!-- frames per second to query the camera for -->
-    	<arg name="fps" value="30" />
-    	<!-- force width and height, 0 means no forcing -->
-	    <arg name="width" value="640"/>
-	    <arg name="height" value="480"/>
-	    <arg name="visualize" value="false"/>
-    </include>
+    <group if="$(eval arg('cam_layout') == 'dual')">
+        <include file="$(find video_stream_opencv)/launch/camera.launch" unless="$(eval arg('long_cam') == 'zed')">
+        	<arg name="camera_name" value="$(arg long_cam)" />
+        	<!-- device identifier /dev/videoX -->
+        	<arg name="video_stream_provider" value="1" />
+        	<!-- camera fps -->
+        	<arg name="set_camera_fps" value="30" />
+        	<!-- frames per second to query the camera for -->
+        	<arg name="fps" value="30" />
+        	<!-- force width and height, 0 means no forcing -->
+    	    <arg name="width" value="640"/>
+    	    <arg name="height" value="480"/>
+    	    <arg name="visualize" value="false"/>
+        </include>
+    </group>
 
     <!-- Zed camera -->
     <group>
@@ -45,9 +48,11 @@
         <include file="$(find zed_wrapper)/launch/zed.launch" if="$(eval arg('short_cam') == 'zed')">
             <arg name="node_name" value="zed_node" />
         </include>
-        <include file="$(find zed_wrapper)/launch/zed.launch" if="$(eval arg('long_cam') == 'zed')">
-            <arg name="node_name" value="zed_node" />
-        </include>
+        <group unless="$(eval arg('cam_layout') == 'single')">
+            <include file="$(find zed_wrapper)/launch/zed.launch" if="$(eval arg('long_cam') == 'zed')" >
+                <arg name="node_name" value="zed_node" />
+            </include>
+        </group>
     </group>
 
 </launch>

@@ -6,6 +6,7 @@
     <arg name="launch_prefix" default=""/>
 
     <!-- Actual camera setup -->
+    <arg name="cam_layout" />
     <arg name="short_cam" />
     <arg name="long_cam" />
 
@@ -25,6 +26,7 @@
 
     <!-- Start high-level detector -->
     <node pkg="mbzirc_detector" type="mbzirc_detector" name="mbzirc_detector" output="screen" launch-prefix="$(arg launch_prefix)">
+        <param name="cam_layout" type="str" value="$(arg cam_layout)" />
         <param name="short_cam_name" type="str" value="$(arg short_cam)" />
         <param name="long_cam_name" type="str" value="$(arg long_cam)" />
         <param name="calib_dir" type="str" value="$(find mbzirc_detector)/calib/" />

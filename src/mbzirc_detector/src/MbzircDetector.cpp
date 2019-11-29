@@ -20,12 +20,16 @@ void MbzircDetector::readParameters()
     nh_.getParam("publishers/detection_image/queue_size", det_img_q_size);
     nh_.getParam("publishers/detection_image/latch", det_img_latch);
 
-    nh_.getParam("long_cam_name", long_camera_name);
-    nh_.getParam("cameras/" + long_camera_name + "/topic", long_camera_topic);
-    nh_.getParam("cameras/" + long_camera_name + "/stereo", long_camera_stereo);
+    nh_.getParam("cam_layout", cam_layout);
+    if ((cam_layout.compare("single") != 0) && (cam_layout.compare("dual") != 0))
+        ROS_ERROR("Unsupported cam_layout: %s", cam_layout.c_str());
+
     nh_.getParam("short_cam_name", short_camera_name);
     nh_.getParam("cameras/" + short_camera_name + "/topic", short_camera_topic);
     nh_.getParam("cameras/" + short_camera_name + "/stereo", short_camera_stereo);
+    nh_.getParam("long_cam_name", long_camera_name);
+    nh_.getParam("cameras/" + long_camera_name + "/topic", long_camera_topic);
+    nh_.getParam("cameras/" + long_camera_name + "/stereo", long_camera_stereo);
 
     nh_.getParam("calib_dir", calib_dir);
 
@@ -106,6 +110,9 @@ void MbzircDetector::switchCamera(CameraType new_cam_range)
 {
     topic_tools::MuxSelect srv;
 
+    if (cam_layout.compare("single") == 0)
+        return;
+
     if (new_cam_range == current_cam_range)
         return;
 
@@ -139,7 +146,7 @@ MbzircDetector::MbzircDetector(ros::NodeHandle nh)
     mux_nh_("mux_cam"),
     yolo_act_cl_(nh_, "/darknet_ros/detect_objects", true),
     dist_act_cl_(nh_, "/distance_finder/get_distance", true),
-    current_cam_range(LONG_RANGE),
+    current_cam_range(SHORT_RANGE),
     det_strategy(COLOR)
 {
     // Read the configuration
@@ -447,6 +454,6 @@ void MbzircDetector::cameraCallback(const sensor_msgs::ImageConstPtr& msg)
     }
 
     // TODO must implement a policy for this
-    switchCamera(SHORT_RANGE);
+    // switchCamera(SHORT_RANGE);
 }
 

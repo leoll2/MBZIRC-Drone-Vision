@@ -38,6 +38,7 @@ class MbzircDetector {
     cv::Scalar secondary_thresh_lb;
     cv::Scalar secondary_thresh_ub;
     std::string calib_dir;
+    std::string cam_layout;
     std::string input_camera_topic;
     std::string long_camera_name;
     std::string long_camera_topic;

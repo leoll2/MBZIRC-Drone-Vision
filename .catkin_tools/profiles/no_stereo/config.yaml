@@ -1,0 +1,26 @@
+blacklist:
+- zed_ros
+- zed_wrapper
+- zed_display_rviz
+- zed_ar_track_alvar_example
+- zed_depth_sub_tutorial
+- zed_tracking_sub_tutorial
+- zed_video_sub_tutorial
+- zed_nodelet_example
+- zed_rtabmap_example
+build_space: build
+catkin_make_args: []
+cmake_args: []
+devel_layout: linked
+devel_space: devel
+extend_path: null
+install: false
+install_space: install
+isolate_install: false
+jobs_args: []
+log_space: logs
+make_args: []
+source_space: src
+use_env_cache: false
+use_internal_make_jobserver: true
+whitelist: []
