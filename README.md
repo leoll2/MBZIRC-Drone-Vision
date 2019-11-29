@@ -99,6 +99,7 @@ Often you can find them documented in the docs page of the respective ROS packag
 Compile with:
 ```
 catkin config --cmake-args -DCMAKE_BUILD_TYPE=Release
+catking build
 source devel/setup.bash
 ```
 
