@@ -75,9 +75,10 @@ void DistanceFinder::getDistanceActionGoalCallback(const distance_finder::GetDis
     uint32_t obj_y = dist_act_ptr->y;
     uint32_t obj_w = dist_act_ptr->w;
     uint32_t obj_h = dist_act_ptr->h;
+    string obj_class("primary_target") // TODO: fixare l'azione
 
     // Compute distance and error
-    PosError pe = findPosError(cam_name, obj_x, obj_y, obj_w, obj_h, header);
+    PosError pe = findPosError(cam_name, obj_x, obj_y, obj_w, obj_h, obj_class, header);
 
     // Produce action response
     dist_act_res.dist = pe.dist_m;
@@ -97,14 +98,23 @@ void DistanceFinder::getDistanceActionPreemptCallback()
 
 /* Compute the distance from the object by the means of a simple proportion */
 double DistanceFinder::findDistanceByProportion(const CameraParameters& cp, 
-    uint32_t x, uint32_t y, uint32_t w, uint32_t h)
+    uint32_t x, uint32_t y, uint32_t w, uint32_t h, string obj_class)
 {
-    // Observed flying ball radius in pixel (usually the largest dimension is closer to reality)
-    double fly_ball_radius_pix = std::max(w, h) / 2;
-    // flying ball radius in pixel at calibration distance
-    double calib_fly_ball_radius_pix = cp.resolution_width / cp.calib_fov_width * fly_ball_params.radius;
+    int obj_radius;
 
-    return cp.calib_dist * calib_fly_ball_radius_pix / fly_ball_radius_pix;
+    if obj_class.compare("primary_target")
+        obj_radius = fly_ball_params.radius;
+    else if obj_class.compare("secondary_target")
+        obj_radius = gnd_ball_params.radius;
+    else
+        ROS_WARN("Unrecognized class in findDistanceByProportion");
+
+    // Observed flying ball radius in pixel (usually the largest dimension is closer to reality)
+    double obj_radius_pix = std::max(w, h) / 2;
+    // flying ball radius in pixel at calibration distance
+    double calib_obj_radius_pix = cp.resolution_width / cp.calib_fov_width * obj_radius;
+
+    return cp.calib_dist * calib_obj_radius_pix / obj_radius_pix;
 }
 
 
@@ -219,7 +229,7 @@ RPY DistanceFinder::findOrientation(ros::Time ts)
  * The distance is computed by the means of a depth map (when available) or 
  * a simple geometrical proportion. */
 PosError DistanceFinder::findPosError(std::string cam_name, 
-    uint32_t x, uint32_t y, uint32_t w, uint32_t h, std_msgs::Header header)
+    uint32_t x, uint32_t y, uint32_t w, uint32_t h, string obj_class, std_msgs::Header header)
 {
     tf2::Quaternion q_corr;
     RPY orient;
@@ -236,7 +246,7 @@ PosError DistanceFinder::findPosError(std::string cam_name,
             // Use depth map if available (stereo camera)
             double dist_dmap, dist_prop;
             dist_dmap = findDistanceByDepthMap(cp, x, y, w, h, header.stamp);
-            dist_prop = findDistanceByProportion(cp, x, y, w, h);
+            dist_prop = findDistanceByProportion(cp, x, y, w, h, obj_class);
             if (dist_dmap < 0) {
                 // if dmap was unreadable, fallback to prop dist
                 dist = dist_prop;
@@ -254,7 +264,7 @@ PosError DistanceFinder::findPosError(std::string cam_name,
                 }
             }
         } else {
-            dist = findDistanceByProportion(cp, x, y, w, h);
+            dist = findDistanceByProportion(cp, x, y, w, h, obj_class);
             ROS_INFO("Using dist_prop (not stereo)");
         }
     
@@ -349,7 +359,7 @@ void DistanceFinder::bboxesCallback(const distance_finder::ObjectBoxes::ConstPtr
         distance_finder::PosError poserr;
         distance_finder::ObjPos tpos;
         // Compute the distance and position errors
-        poserr = findPosError(cam_name, obj.x, obj.y, obj.w, obj.h, tpos_vec.header);
+        poserr = findPosError(cam_name, obj.x, obj.y, obj.w, obj.h, obj.obj_class, tpos_vec.header);
         tpos.obj_class = obj.obj_class;
         tpos.res_w = (unsigned)cp.resolution_width;
         tpos.res_h = (unsigned)cp.resolution_height;
