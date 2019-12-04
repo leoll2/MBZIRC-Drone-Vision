@@ -75,7 +75,7 @@ void DistanceFinder::getDistanceActionGoalCallback(const distance_finder::GetDis
     uint32_t obj_y = dist_act_ptr->y;
     uint32_t obj_w = dist_act_ptr->w;
     uint32_t obj_h = dist_act_ptr->h;
-    string obj_class("primary_target") // TODO: fixare l'azione
+    std::string obj_class("primary_target") // TODO: fixare l'azione
 
     // Compute distance and error
     PosError pe = findPosError(cam_name, obj_x, obj_y, obj_w, obj_h, obj_class, header);
@@ -98,23 +98,22 @@ void DistanceFinder::getDistanceActionPreemptCallback()
 
 /* Compute the distance from the object by the means of a simple proportion */
 double DistanceFinder::findDistanceByProportion(const CameraParameters& cp, 
-    uint32_t x, uint32_t y, uint32_t w, uint32_t h, string obj_class)
+    uint32_t x, uint32_t y, uint32_t w, uint32_t h, std::string obj_class)
 {
-    int obj_radius;
+    double obj_radius;
 
-    if obj_class.compare("primary_target")
+    if obj_class.compare("primary_target" == 0)
         obj_radius = fly_ball_params.radius;
-    else if obj_class.compare("secondary_target")
+    else if obj_class.compare("secondary_target" == 0)
         obj_radius = gnd_ball_params.radius;
     else
         ROS_WARN("Unrecognized class in findDistanceByProportion");
 
     // Observed flying ball radius in pixel (usually the largest dimension is closer to reality)
     double obj_radius_pix = std::max(w, h) / 2;
-    // flying ball radius in pixel at calibration distance
-    double calib_obj_radius_pix = cp.resolution_width / cp.calib_fov_width * obj_radius;
 
-    return cp.calib_dist * calib_obj_radius_pix / obj_radius_pix;
+    return (cp.focal_len * obj_radius * cp.resolution_width) / 
+        (cp.sensor_width*obj_radius_pix);
 }
 
 
@@ -229,7 +228,7 @@ RPY DistanceFinder::findOrientation(ros::Time ts)
  * The distance is computed by the means of a depth map (when available) or 
  * a simple geometrical proportion. */
 PosError DistanceFinder::findPosError(std::string cam_name, 
-    uint32_t x, uint32_t y, uint32_t w, uint32_t h, string obj_class, std_msgs::Header header)
+    uint32_t x, uint32_t y, uint32_t w, uint32_t h, std::string obj_class, std_msgs::Header header)
 {
     tf2::Quaternion q_corr;
     RPY orient;

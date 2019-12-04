@@ -85,9 +85,9 @@ class DistanceFinder
     void getDistanceActionGoalCallback(const distance_finder::GetDistanceGoalConstPtr &dist_act_ptr);
     void getDistanceActionPreemptCallback();
     RPY findOrientation(ros::Time timestamp);
-    double findDistanceByProportion(const CameraParameters& cp, uint32_t x, uint32_t y, uint32_t w, uint32_t h, string obj_class);
+    double findDistanceByProportion(const CameraParameters& cp, uint32_t x, uint32_t y, uint32_t w, uint32_t h, std::string obj_class);
     double findDistanceByDepthMap(const CameraParameters& cp, uint32_t x, uint32_t y, uint32_t w, uint32_t h, ros::Time timestamp);
-    PosError findPosError(std::string cam_name, uint32_t x, uint32_t y, uint32_t w, uint32_t h, string obj_class, std_msgs::Header header);
+    PosError findPosError(std::string cam_name, uint32_t x, uint32_t y, uint32_t w, uint32_t h, std::string obj_class, std_msgs::Header header);
 
 
 public:
