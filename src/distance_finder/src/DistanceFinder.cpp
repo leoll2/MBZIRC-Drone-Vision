@@ -75,7 +75,7 @@ void DistanceFinder::getDistanceActionGoalCallback(const distance_finder::GetDis
     uint32_t obj_y = dist_act_ptr->y;
     uint32_t obj_w = dist_act_ptr->w;
     uint32_t obj_h = dist_act_ptr->h;
-    std::string obj_class("primary_target") // TODO: fixare l'azione
+    std::string obj_class("primary_target"); // TODO: fixare l'azione
 
     // Compute distance and error
     PosError pe = findPosError(cam_name, obj_x, obj_y, obj_w, obj_h, obj_class, header);
@@ -102,9 +102,9 @@ double DistanceFinder::findDistanceByProportion(const CameraParameters& cp,
 {
     double obj_radius;
 
-    if obj_class.compare("primary_target" == 0)
+    if (obj_class.compare("primary_target") == 0)
         obj_radius = fly_ball_params.radius;
-    else if obj_class.compare("secondary_target" == 0)
+    else if (obj_class.compare("secondary_target") == 0)
         obj_radius = gnd_ball_params.radius;
     else
         ROS_WARN("Unrecognized class in findDistanceByProportion");
