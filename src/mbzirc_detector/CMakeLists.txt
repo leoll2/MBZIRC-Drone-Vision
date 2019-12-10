@@ -156,6 +156,7 @@ if (CUDA_FOUND)
     cuda_add_library(${PROJECT_NAME}_lib
       src/MbzircDetector.cpp
       src/ColorDetector.cpp
+      src/ObjectMemory.cpp
       src/cv_algorithms.cpp
     )
     
@@ -188,6 +189,7 @@ else()
     add_library(${PROJECT_NAME}_lib
       src/MbzircDetector.cpp
       src/ColorDetector.cpp
+      src/ObjectMemory.cpp
       src/cv_algorithms.cpp
     )
     

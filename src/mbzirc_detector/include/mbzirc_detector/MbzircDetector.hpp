@@ -13,6 +13,7 @@
 #include "color_detector/cv_algorithms.hpp"
 #include "color_detector/ColorDetector.hpp"
 #include "distance_finder/DistanceFinder.hpp"
+#include "object_memory/ObjectMemory.hpp"
 
 
 class MbzircDetector {
@@ -30,6 +31,7 @@ class MbzircDetector {
     actionlib::SimpleActionClient<darknet_ros_msgs::DetectObjectsAction> yolo_act_cl_;
     actionlib::SimpleActionClient<distance_finder::GetDistanceAction> dist_act_cl_;
     ColorDetector *color_detector;
+    ObjectMemory *object_memory;
 
     CameraType current_cam_range;
     DetectType det_strategy;
@@ -57,6 +59,7 @@ class MbzircDetector {
     bool det_img_latch;
 
     void readParameters();
+    void initObjectMemory();
     void initColorDetector();
     void switchCamera(CameraType new_camera_range);
     std::vector<BBox> callYoloDetector(const sensor_msgs::ImageConstPtr& msg_img);

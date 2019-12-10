@@ -47,3 +47,14 @@ color_detection:
         soft_hard_area_thresh: 150
         max_dist_soft: 0.036 
         max_dist_hard: 0.030
+
+
+object_memory:
+    
+    max_objects: 5
+    max_dist: 200
+    inc: 1
+    dec: 1
+    min_counter: 0
+    max_counter: 5
+    thr_counter: 3

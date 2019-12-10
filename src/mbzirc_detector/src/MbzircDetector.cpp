@@ -45,6 +45,28 @@ void MbzircDetector::readParameters()
 }
 
 
+/* Initialize the object memory */
+void MbzircDetector::initObjectMemory()
+{
+    int max_objects;
+    int max_dist;
+    int inc, dec;
+    int min_counter, max_counter, thr_counter;
+
+    nh_.getParam("object_memory/max_objects", max_objects);
+    nh_.getParam("object_memory/max_dist", max_dist);
+    nh_.getParam("object_memory/inc", inc);
+    nh_.getParam("object_memory/dec", dec);
+    nh_.getParam("object_memory/min_counter", min_counter);
+    nh_.getParam("object_memory/max_counter", max_counter);
+    nh_.getParam("object_memory/thr_counter", thr_counter);
+
+    object_memory = new ObjectMemory(max_objects, max_dist, inc, dec,
+        min_counter, max_counter, thr_counter
+    );
+}
+
+
 /* Initialize the color detector, according to its config file */
 void MbzircDetector::initColorDetector()
 {
@@ -130,7 +152,7 @@ void MbzircDetector::switchCamera(CameraType new_cam_range)
     current_cam_range = new_cam_range;
 
     if (cam_sel_client.call(srv)) {
-        ROS_DEBUG("Switched camera from %s to %s", 
+        ROS_INFO("Switched camera from %s to %s", 
             srv.response.prev_topic.c_str(), srv.request.topic.c_str()
         );
     } else {
@@ -146,7 +168,7 @@ MbzircDetector::MbzircDetector(ros::NodeHandle nh)
     mux_nh_("mux_cam"),
     yolo_act_cl_(nh_, "/darknet_ros/detect_objects", true),
     dist_act_cl_(nh_, "/distance_finder/get_distance", true),
-    current_cam_range(SHORT_RANGE),
+    current_cam_range(LONG_RANGE),
     det_strategy(COLOR)
 {
     // Read the configuration
@@ -165,6 +187,10 @@ MbzircDetector::MbzircDetector(ros::NodeHandle nh)
     initColorDetector();
     ROS_INFO("Successfully initialized color detector");
 
+    // Init object memory
+    initObjectMemory();
+    ROS_INFO("Successfully initialized object memory");
+
     // Setup publisher for bounding boxes and detection image
     if (bboxes_topic_enable) {
         bboxes_pub_ = nh_.advertise<distance_finder::ObjectBoxes>( 
@@ -178,7 +204,7 @@ MbzircDetector::MbzircDetector(ros::NodeHandle nh)
     }
 
     // Select the correct camera source
-    switchCamera(current_cam_range);
+    switchCamera(SHORT_RANGE);
 
     // Subscribe to camera input
     image_sub_ = it_.subscribe(input_camera_topic, 1, 
@@ -413,6 +439,12 @@ void MbzircDetector::cameraCallback(const sensor_msgs::ImageConstPtr& msg)
             b.obj_class.c_str(), b.x, b.y, b.x+b.w, b.y+b.h, b.prob    
         );
     }
+
+    // Insert the detection in the ObjectMemory (history manager)
+    object_memory->putObjects(bboxes);
+
+    // Retrieve the objects from ObjectMemory (history manager)
+    bboxes = object_memory->getObjects();
 
     // Publish result (if empty, may skip depending on configuration)
     if (bboxes_topic_enable && (bboxes_pub_empty || !bboxes.empty())) {
