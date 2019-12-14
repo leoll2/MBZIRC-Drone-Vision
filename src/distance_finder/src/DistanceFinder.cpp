@@ -371,8 +371,8 @@ void DistanceFinder::bboxesCallback(const distance_finder::ObjectBoxes::ConstPtr
         ROS_INFO("distance: %.2f  err_X=%.2f  err_Y=%.2f", tpos.dist, tpos.err_x_m, tpos.err_y_m);
     }
 
-    if (obj_boxes_ptr->obj_boxes.size() == 0)
-        ROS_INFO("No object found");
+    //if (obj_boxes_ptr->obj_boxes.size() == 0)
+    //    ROS_INFO("No object found");
 
     // Publish the result
     target_pos_pub_.publish(tpos_vec);

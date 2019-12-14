@@ -57,6 +57,7 @@ class MbzircDetector {
     bool det_img_topic_enable;
     int det_img_q_size;
     bool det_img_latch;
+    bool obj_mem_enable;
 
     void readParameters();
     void initObjectMemory();

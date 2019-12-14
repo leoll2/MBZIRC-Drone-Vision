@@ -108,6 +108,12 @@ Run with:
 roslaunch mbzirc_detection_launcher start_all.launch
 ```
 
+## Record
+
+It is possible to save the video streaming on the remote host, simply using any program that can record media streams from the network, e.g. the popular VLC media player.
+In VLC, under "Media", choose "Convert/Save". Select "Network", then insert the streaming URL (see above), and finally click the convert button below. As profile, I suggest using H264 + MP3 (MP4). Choose a folder and a name for the file you're going to create. The recording will start as soon as you click on the button "Start", and you will see a red marker in the bottom (you're recording, even though it is not that explicit). To finish recording, click the stop button (i.e. the square).
+Be aware that the very last moments/seconds of the video may go missing, if they were in cache waiting to be written when you shut the system down.
+
 ## Performances
 - The color-based detection algorithm runs smoothly at more than 20 FPS on a Jetson TX2. Its high-speed makes it ideal to identify small targets moving fast.
 - The deep learning detection algorithm (YOLOv3) runs at 6 FPS. Although slower, it is more robust against false positives, and does fine even in hard conditions (e.g. white balloon in white background). It works best to detect static targets.

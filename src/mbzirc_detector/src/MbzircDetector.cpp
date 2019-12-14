@@ -53,6 +53,7 @@ void MbzircDetector::initObjectMemory()
     int inc, dec;
     int min_counter, max_counter, thr_counter;
 
+    nh_.getParam("object_memory/enable", this->obj_mem_enable);
     nh_.getParam("object_memory/max_objects", max_objects);
     nh_.getParam("object_memory/max_dist", max_dist);
     nh_.getParam("object_memory/inc", inc);
@@ -440,11 +441,13 @@ void MbzircDetector::cameraCallback(const sensor_msgs::ImageConstPtr& msg)
         );
     }
 
-    // Insert the detection in the ObjectMemory (history manager)
-    object_memory->putObjects(bboxes);
+    if (obj_mem_enable) {
+        // Insert the detection in the ObjectMemory (history manager)
+        object_memory->putObjects(bboxes, msg->width, msg->height);
 
-    // Retrieve the objects from ObjectMemory (history manager)
-    bboxes = object_memory->getObjects();
+        // Retrieve the objects from ObjectMemory (history manager)
+        bboxes = object_memory->getObjects();
+    }
 
     // Publish result (if empty, may skip depending on configuration)
     if (bboxes_topic_enable && (bboxes_pub_empty || !bboxes.empty())) {
