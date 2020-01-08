@@ -34,7 +34,10 @@ void ColorDetector::loadCircleContour()
         return;
     }
     circle_lab = cv_alg::bgr2lab(circle_img);
-    circle_mask = cv_alg::LabColorFilter(circle_lab, &lb, &ub);
+    // Note: the calibration image is red (always!), so appropriate thresholds are needed
+    cv::Scalar lb_calib = cv::Scalar(0, 160, 130);
+    cv::Scalar ub_calib = cv::Scalar(255, 255, 255);
+    circle_mask = cv_alg::LabColorFilter(circle_lab, &lb_calib, &ub_calib);
     this->circle_con = std::vector<cv::Point>(cv_alg::findContours(circle_mask)[0]);
 }
 
