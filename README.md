@@ -21,9 +21,17 @@ git submodule init
 git submodule update
 ```
 
-Download the Yolo weights from the following links:
+Download the Yolo cfg from the following link:
 ```
 https://drive.google.com/drive/folders/1Sa31sZs0eNFPUbJJfuMr3kzoQXbMGRf1?usp=sharing
+```
+and put them in:
+```
+src/darknet_ros/darknet_ros/yolo_network_config/cfg
+```
+Download weights:
+```
+https://drive.google.com/open?id=1G3_RWDsaeQsBn2LPCyx7weaWDysLDDXl
 ```
 and put them in:
 ```
