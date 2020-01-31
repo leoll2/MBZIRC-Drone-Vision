@@ -31,6 +31,7 @@ public:
     ObjectMemory(unsigned max_objects, unsigned max_dist, unsigned inc, unsigned dec,
         unsigned min_counter, unsigned max_counter, unsigned thr_counter);
     ~ObjectMemory();
+    BBox mobileMeanBBoxes(BBox& new_bbox, BBox& mobmean_bbox);
     std::vector<BBox> getObjects();
     void putObjects(std::vector<BBox>, const unsigned res_w, const unsigned res_h);
 

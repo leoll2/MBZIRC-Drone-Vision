@@ -144,9 +144,35 @@ std::vector<BBox> ObjectMemory::getObjects() {
 }
 
 
+BBox ObjectMemory::mobileMeanBBoxes(BBox& new_bbox, BBox& mobmean_bbox)
+{
+    int d_old, d_new;
+    double mu;
+    BBox res_bbox;
+
+    d_old = std::max(mobmean_bbox.w, mobmean_bbox.h);
+    d_new = std::max(new_bbox.w, new_bbox.h);
+
+    if (d_new > d_old)
+        mu = 0.3;
+    else
+        mu = 0.05;
+
+    res_bbox.w = mu*new_bbox.w + (1-mu)*old_bbox.w;
+    res_bbox.h = mu*new_bbox.h + (1-mu)*old_bbox.h;
+    res_bbox.x = new_bbox.x + new_bbox.w/2 -res_bbox.w;
+    res_bbox.y = new_bbox.y + new_bbox.h/2 -res_bbox.h;
+    res_bbox.prob = new_bbox.prob;
+    res_bbox.obj_class = new_bbox.obj_class;
+
+    return res_bbox;
+}
+
+
 void ObjectMemory::putObjects(std::vector<BBox> new_bboxes, const unsigned res_w, const unsigned res_h)
 {
     std::list<ObjHistory>::iterator closest;
+    BBox old_bbox, new_bbox;
 
     // Decrement the counter of each history
     decreaseAllCounters();
@@ -157,8 +183,9 @@ void ObjectMemory::putObjects(std::vector<BBox> new_bboxes, const unsigned res_w
         closest = findClosestHistory(b, res_w, res_h);
         if (closest != histories.end()) {
             // if a close history exists
+            old_bbox = closest->bbox;
+            closest->bbox = mobileMeanBBoxes(new_bbox, old_bbox);
             closest->counter = clamp(closest->counter + inc + dec, min_counter, max_counter);
-            closest->bbox = b;
         } else {
             // if no close history exists, add a new one (if enough space)
             addNewHistory(b);
