@@ -17,6 +17,7 @@ class ObjectMemory {
     unsigned max_dist;
     unsigned inc, dec;
     unsigned min_counter, max_counter, thr_counter;
+    double mu_dec, mu_inc;
     std::list<ObjHistory> histories;
 
     unsigned int computeBBoxDistance(const BBox& b1, const BBox& b2,
@@ -29,9 +30,10 @@ class ObjectMemory {
 
 public:
     ObjectMemory(unsigned max_objects, unsigned max_dist, unsigned inc, unsigned dec,
-        unsigned min_counter, unsigned max_counter, unsigned thr_counter);
+        unsigned min_counter, unsigned max_counter, unsigned thr_counter,
+	double mu_inc, double mu_dec);
     ~ObjectMemory();
-    BBox mobileMeanBBoxes(BBox& new_bbox, BBox& mobmean_bbox);
+    BBox mobileMeanBBoxes(const BBox& new_bbox, const BBox& mobmean_bbox);
     std::vector<BBox> getObjects();
     void putObjects(std::vector<BBox>, const unsigned res_w, const unsigned res_h);
 

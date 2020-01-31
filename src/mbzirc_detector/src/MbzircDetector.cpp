@@ -52,6 +52,7 @@ void MbzircDetector::initObjectMemory()
     int max_dist;
     int inc, dec;
     int min_counter, max_counter, thr_counter;
+    double mu_inc, mu_dec;
 
     nh_.getParam("object_memory/enable", this->obj_mem_enable);
     nh_.getParam("object_memory/max_objects", max_objects);
@@ -61,9 +62,11 @@ void MbzircDetector::initObjectMemory()
     nh_.getParam("object_memory/min_counter", min_counter);
     nh_.getParam("object_memory/max_counter", max_counter);
     nh_.getParam("object_memory/thr_counter", thr_counter);
+    nh_.getParam("object_memory/mu_inc", mu_inc);
+    nh_.getParam("object_memory/mu_dec", mu_dec);
 
     object_memory = new ObjectMemory(max_objects, max_dist, inc, dec,
-        min_counter, max_counter, thr_counter
+        min_counter, max_counter, thr_counter, mu_inc, mu_dec
     );
 }
 

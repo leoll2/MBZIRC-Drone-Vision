@@ -115,7 +115,7 @@ bool ObjectMemory::addNewHistory(BBox b)
 
 
 ObjectMemory::ObjectMemory(unsigned max_objects, unsigned max_dist, unsigned inc, unsigned dec,
-    unsigned min_counter, unsigned max_counter, unsigned thr_counter)
+    unsigned min_counter, unsigned max_counter, unsigned thr_counter, double mu_inc, double mu_dec)
 {
     this->max_objects = max_objects;
     this->max_dist = max_dist;
@@ -124,6 +124,8 @@ ObjectMemory::ObjectMemory(unsigned max_objects, unsigned max_dist, unsigned inc
     this->min_counter = min_counter;
     this->max_counter = max_counter;
     this->thr_counter = thr_counter;
+    this->mu_inc = mu_inc;
+    this->mu_dec = mu_dec;
 }
 
 
@@ -144,7 +146,7 @@ std::vector<BBox> ObjectMemory::getObjects() {
 }
 
 
-BBox ObjectMemory::mobileMeanBBoxes(BBox& new_bbox, BBox& mobmean_bbox)
+BBox ObjectMemory::mobileMeanBBoxes(const BBox& new_bbox, const BBox& mobmean_bbox)
 {
     int d_old, d_new;
     double mu;
@@ -154,14 +156,14 @@ BBox ObjectMemory::mobileMeanBBoxes(BBox& new_bbox, BBox& mobmean_bbox)
     d_new = std::max(new_bbox.w, new_bbox.h);
 
     if (d_new > d_old)
-        mu = 0.3;
+        mu = this->mu_inc;
     else
-        mu = 0.05;
+        mu = this->mu_dec;
 
-    res_bbox.w = mu*new_bbox.w + (1-mu)*old_bbox.w;
-    res_bbox.h = mu*new_bbox.h + (1-mu)*old_bbox.h;
-    res_bbox.x = new_bbox.x + new_bbox.w/2 -res_bbox.w;
-    res_bbox.y = new_bbox.y + new_bbox.h/2 -res_bbox.h;
+    res_bbox.w = mu*new_bbox.w + (1-mu)*mobmean_bbox.w;
+    res_bbox.h = mu*new_bbox.h + (1-mu)*mobmean_bbox.h;
+    res_bbox.x = new_bbox.x + new_bbox.w/2 -res_bbox.w/2;
+    res_bbox.y = new_bbox.y + new_bbox.h/2 -res_bbox.h/2;
     res_bbox.prob = new_bbox.prob;
     res_bbox.obj_class = new_bbox.obj_class;
 
@@ -184,7 +186,7 @@ void ObjectMemory::putObjects(std::vector<BBox> new_bboxes, const unsigned res_w
         if (closest != histories.end()) {
             // if a close history exists
             old_bbox = closest->bbox;
-            closest->bbox = mobileMeanBBoxes(new_bbox, old_bbox);
+            closest->bbox = mobileMeanBBoxes(b, old_bbox);
             closest->counter = clamp(closest->counter + inc + dec, min_counter, max_counter);
         } else {
             // if no close history exists, add a new one (if enough space)
