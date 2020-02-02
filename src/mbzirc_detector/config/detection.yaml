@@ -59,3 +59,5 @@ object_memory:
     min_counter: 0
     max_counter: 10
     thr_counter: 4
+    mu_inc: 0.3
+    mu_dec: 0.1
