@@ -9,8 +9,8 @@
     <!-- Choose here the default camera configuration -->
     <!-- Allowed values for cam_layout: dual, single  -->
     <arg name="cam_layout" default="single" />
-    <arg name="short_cam" default="mobius" />
-    <arg name="long_cam" default="runcam2" />
+    <arg name="short_cam" default="zed" />
+    <arg name="long_cam" default="zed" />
 
     <!-- Choose here the streaming configuration -->
     <arg name="stream_port" default="8080" />
@@ -44,7 +44,9 @@
     </group>
 
     <!-- Darknet Yolo detector -->
-    <include file="$(find darknet_ros)/launch/darknet.launch" />
+    <include file="$(find darknet_ros)/launch/darknet.launch">
+        <arg name="network_param_file" value="$(find darknet_ros)/config/yolov3_mbzirc_race.yaml"/>
+    </include> 
 
     <!-- High-level detector -->
     <include file="$(find mbzirc_detector)/launch/detector.launch" >
@@ -56,7 +58,7 @@
     <!-- Display (for monitor/debugging) -->
     <include file="$(find mbzirc_detection_launcher)/start_display.launch" />
 
-    <!-- High-level detector -->
+    <!-- Streaming -->
     <include file="$(find mbzirc_detection_launcher)/start_streaming.launch" >
         <arg name="port" value="$(arg stream_port)" />
         <arg name="address" value="$(arg stream_addr)" />

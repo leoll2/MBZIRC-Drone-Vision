@@ -1,0 +1,14 @@
+yolo_model:
+
+  config_file:
+    name: yolov3_mbzirc_race.cfg
+  weight_file:
+    name: yolov3_mbzirc_race.weights
+  threshold:
+    value: 0.4
+  nsm_threshold:
+    value: 0.2
+  detection_classes:
+    names:
+      - drone
+      - ball

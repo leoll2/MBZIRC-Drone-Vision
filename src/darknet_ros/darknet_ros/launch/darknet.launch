@@ -9,7 +9,7 @@
   <arg name="yolo_config_path"           default="$(find darknet_ros)/yolo_network_config/cfg"/>
 
   <!-- ROS and network parameter files -->
-  <arg name="network_param_file"         default="$(find darknet_ros)/config/yolov3-tiny_3l-mbzirc_anchors.yaml"/>
+  <arg name="network_param_file"         default="$(find darknet_ros)/config/yolov3_mbzirc_race.yaml"/>
 
   <!-- Load parameters -->
   <rosparam command="load" ns="darknet_ros" file="$(arg network_param_file)"/>
