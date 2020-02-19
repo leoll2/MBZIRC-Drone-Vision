@@ -12,4 +12,4 @@
 	url = https://github.com/leoll2/web_video_server
 [submodule "src/mbzirc_control"]
 	path = src/mbzirc_control
-	url = git@github.com:lorenzoferrini/mbzirc_control.git
+	url = https://github.com/lorenzoferrini/mbzirc_control
