@@ -304,10 +304,16 @@ void MbzircDetector::adjustClassByColor(cv::Mat &cv_img, std::vector<BBox> &bbox
             cv::Rect rbb(bb.x, bb.y, bb.w, bb.h);
             cv::Rect rbb_mid = cv_alg::resizeBox(rbb, 1, 2);
             cv::Mat obj_mid_img = cv_img(rbb_mid);
+            /* TODO: make this code general
             cv::Mat obj_mid_hls = cv_alg::bgr2hls(obj_mid_img);
             cv::Mat obj_mid_sec_mask = cv_alg::HLSColorFilter(obj_mid_hls, 
                 &secondary_thresh_lb, &secondary_thresh_ub
-            );
+            );  // white color
+            */
+            cv::Mat obj_mid_lab1 = cv_alg::bgr2lab(obj_mid_img);
+            cv::Mat obj_mid_sec_mask = cv_alg::LabColorFilter(obj_mid_lab1,
+                &secondary_thresh_lb, &secondary_thresh_ub
+            );  // green color
             int n_pixels_white = cv::countNonZero(obj_mid_sec_mask);
             if ((double)n_pixels_white / (rbb_mid.width * rbb_mid.height) > 0.3) {
                 bb.obj_class = std::string("ball_white");

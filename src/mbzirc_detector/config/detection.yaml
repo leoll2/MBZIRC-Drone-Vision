@@ -21,14 +21,23 @@ color_detection:
     
     secondary:
 
-        # HLS thresholds for secondary target
+        # HLS thresholds for secondary target TODO names are relative to HLS for compatibility
+        #hls_thresh:
+        #    hue_min: 0 
+        #    hue_max: 180
+        #    lig_min: 140
+        #    lig_max: 255
+        #    sat_min: 0
+        #    sat_max: 70
+
+        # Lab thresholds for secondary target
         hls_thresh:
-            hue_min: 0 
-            hue_max: 180
-            lig_min: 140
-            lig_max: 255
-            sat_min: 0
-            sat_max: 70
+            hue_min: 0
+            hue_max: 255
+            lig_min: 0
+            lig_max: 85
+            sat_min: 150
+            sat_max: 255
 
     # Minimum area (pixel); smaller objects are ignored
     min_area_pix: 6
