@@ -1,15 +1,37 @@
 # MBZIRC Vision Module
 
-Target detection module of the Biorobotics Team for MBZIRC 2020.
+Here is the code of the **target detection** module for **autonomous drones**, developed by me as a member of the Biorobotics Team (Sant'Anna School, Pisa) in MBZIRC 2020.  
 
-## Dependencies 
+[**MBZIRC**](https://www.mbzirc.com/) (*Mohamed Bin Zayed International Robotics Challenge)* is one of the largest and most prestigious robotics competititions in the world, held in Abu Dhabi every 2-3 years.  
+In the 2020 edition, one of the challenges was to develop and build a fully autonomous drone able to identify a target (balloon) and pop it.
+
+My team secured the 4th place in this challenge, out of 22 selected teams.
+
+<p float="left">
+<img src="http://i3.ytimg.com/vi/tmsHTf0RaPw/maxresdefault.jpg" height="300">
+<img src="https://imgur.com/R3SF4hR.jpg" height="300">
+</p>
+
+**Watch the video:** https://www.youtube.com/watch?v=tmsHTf0RaPw
+
+## Description
+
+Our object detection module implements two strategies:
+* **Computer Vision**: identify the target by color (configurable) and shape (round)
+* **Deep Learning**: CNN (tiny-YOLOv3) trained on a self-made dataset with more than 5000 balloon images.
+
+All the computations are performed on a Nvidia Jetson TX2 installed on the drone.  
+The neural network has been trained with the help of a Tesla P100 GPU.
+
+---
+
+## Dependencies
 
 - CUDA 10
 - OpenCV 4
 - ROS Melodic
 - ROS packages:
   - python-catkin-tools: `sudo apt install python-catkin-tools`
-  - [TODO]
 - ZED SDK (if using ZED stereo camera)
 
 ## Install
@@ -21,19 +43,16 @@ git submodule init
 git submodule update
 ```
 
-Download the Yolo cfg from the following link:
+Download the cfg and weights from the following link:
 ```
-https://drive.google.com/drive/folders/1Sa31sZs0eNFPUbJJfuMr3kzoQXbMGRf1?usp=sharing
+https://drive.google.com/drive/folders/1ml-huTmX6u92elMDoegNejKB1D4wr0xd?usp=sharing
 ```
-and put them in:
+Put the .cfg file in:
 ```
 src/darknet_ros/darknet_ros/yolo_network_config/cfg
 ```
-Download weights:
-```
-https://drive.google.com/open?id=1G3_RWDsaeQsBn2LPCyx7weaWDysLDDXl
-```
-and put them in:
+
+and the .weights file in:
 ```
 src/darknet_ros/darknet_ros/yolo_network_config/weights
 ```
@@ -61,13 +80,14 @@ catkin profile set <profile-name>
 ```
 where `profile-name` is one of `stereo` or `no_stereo`.
 
-Then, in `src/mbzirc_detection_launcher/start_all.launch` you can specify how many cameras you are using (`single` or `dual`) and their names. You can find the list of currently supported cameras in `src/mbzirc_detector/config/cameras.yaml`, of course you can extend it (see below [TODO]).
+Then, in `src/mbzirc_detection_launcher/start_all.launch` you can specify how many cameras you are using (`single` or `dual`) and their names. You can find the list of currently supported cameras in `src/mbzirc_detector/config/cameras.yaml`, but of course you can extend it.
 The layout configuration looks like this:
 ```
 <arg name="cam_layout" default="single" />
 <arg name="short_cam" default="zed" />
-<arg name="long_cam" default="mobius" />
+<arg name="long_cam" default="zed" />
 ```
+*Note: when using the 'single' layout, specify the same camera name both in short_cam and long_cam to avoid problems.*
 
 ### Configure the remote streaming
 
@@ -107,7 +127,7 @@ Often you can find them documented in the docs page of the respective ROS packag
 Compile with:
 ```
 catkin config --cmake-args -DCMAKE_BUILD_TYPE=Release
-catking build
+catkin build
 source devel/setup.bash
 ```
 
@@ -126,7 +146,9 @@ Be aware that the very last moments/seconds of the video may go missing, if they
 - The color-based detection algorithm runs smoothly at more than 20 FPS on a Jetson TX2. Its high-speed makes it ideal to identify small targets moving fast.
 - The deep learning detection algorithm (YOLOv3) runs at 6 FPS. Although slower, it is more robust against false positives, and does fine even in hard conditions (e.g. white balloon in white background). It works best to detect static targets.
 
-## Troubleshooting
+### Troubleshooting
+
+If the build process fails, it is likely that some ROS package is missing. Please check the error message looking for the needed package, and possibly open an issue so that I can add it as dependency.
 
 ROS offers several tools to monitor the state of your nodes and topics. In case of problems, they become your best friend.
 I strongly suggest:
@@ -137,7 +159,7 @@ I strongly suggest:
 
 ## Limitations
 
-- The color-based algorithm currently supports only primary target detection. Indeed, it is a hard task to detect secondary targets (white) by color with a decent accuracy, since a large fraction of the background environment is white as well.
+- The color-based algorithm currently supports only the detection of the primary target. Indeed, it is a hard task to detect secondary targets (white) by color with a decent accuracy, since a large fraction of the background environment is white as well.
 
 ## Report a bug
 
